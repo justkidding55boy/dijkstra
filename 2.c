@@ -38,6 +38,8 @@ int *connectedArray(int *sptSet, int root) {
     for (i = 0; i < NNODE; i++) {
         if (sptSet[i] == FALSE && cost[root][i] != INF) {
             theConnectedArray = cost[root][i];
+
+	    //update
         }
     }
 }
