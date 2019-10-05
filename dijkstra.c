@@ -1,28 +1,18 @@
-// 61706613 Â∑•Ëó§ÁëõÂ£´
+// 61706613 çHì°âlém Eiji Kudo
 
 #include <stdio.h>
 
 // determined input
 #define NNODE 6
 #define INF 100 // infinity
-/*int cost[NNODE][NNODE] = {
+int cost[NNODE][NNODE] = {
     {  0,  2, 5,  1, INF, INF},
     {  2,  0, 3,  2, INF, INF},
     {  5,  3, 0,  3,   1,   5},
     {  1,  2, 3,  0,   1, INF},
     {INF,INF, 1,  1,   0,   2},
     {INF,INF, 5, INF,  2,   0}
-};*/
-
-int cost[NNODE][NNODE] = {
-    {  0,  2, 5,  1, 0, 0},
-    {  2,  0, 3,  2, 0, 0},
-    {  5,  3, 0,  3,   1,   5},
-    {  1,  2, 3,  0,   1, 0},
-    {0,0, 1,  1,   0,   2},
-    {0,0, 5, 0,  2,   0}
 };
-
 
 int dist[NNODE];
 int prev[NNODE];
@@ -31,16 +21,15 @@ int prev[NNODE];
 
 // Eiji's solution
 
-#include <string.h>
+
 #define TRUE 1
 #define FALSE 0
 
-//This check whether the node is in n_now
-
 int minDistance(int *dist, int *sptSet) {
+    //this function returns the min number of dist[], using the sptSet
 
     int min = INF;
-    int min_index;
+    int min_index = INF;
 
     //search for the min route around the node
     int v;
@@ -50,15 +39,15 @@ int minDistance(int *dist, int *sptSet) {
             min_index = v;
         }
     }
-
     return min_index;
-    
 }
 
 
 // get the root node
 // return the dist set and prev set
 void dijkstra(int root) {
+    //sptSet is the set of calculated nodes
+    //if it's calculated, the node is TRUE
     int sptSet[NNODE];
 
     //initialize
@@ -70,6 +59,7 @@ void dijkstra(int root) {
 
     //route to route is 0
     dist[root] = 0;
+    prev[root] = root;
 
     int cnt;
     for (cnt = 0; cnt < NNODE - 1; cnt++) {
@@ -82,9 +72,9 @@ void dijkstra(int root) {
         //update the dist value of the adjacenet v
         int v;
         for (v = 0; v < NNODE; v++) {
-            if (!sptSet[v] && cost[u][v] != 0 && cost[u][v] != INF && dist[u] != INF
-                    && dist[u] + cost[u][v] < dist[u]) {
+            if (!sptSet[v] && dist[u] + cost[u][v] < dist[v]) {
                 dist[v] = dist[u] + cost[u][v];
+		prev[v] = u;
             }
         }
     }

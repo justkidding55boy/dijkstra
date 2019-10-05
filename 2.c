@@ -39,21 +39,18 @@ int *connectedArray(int *sptSet, int root) {
         if (sptSet[i] == FALSE && cost[root][i] != INF) {
             theConnectedArray = cost[root][i];
 
-	    //update
+	    
         }
     }
 }
 
 //This check whether the node is in n_now
 
-int minDistance(int *dist, int *sptSet) {
+int minDistance(int *dist, int *sptSet, int root) {
     int min = INF;
     int min_index = INF;
 //繋がっているもので最小のものを持ってくる
-    int v;
-    for (v = 0; v < NNODE; v++) {
-        if (sptSet[v] == FALSE &&)
-    }
+    int theArray = connectedArray(sptSet, root)
     
 }
 
@@ -61,6 +58,10 @@ int minDistance(int *dist, int *sptSet) {
 // get the root node
 // return the dist set and prev set
 void dijkstra(int root) {
+    //Effectives: compose the min cost to the node to dist[NNODE]
+    //compose the previous node to prev[NNODE]
+    
+    //sptSet includes the calculated nodes
     int sptSet[NNODE];
 
     //initialize
@@ -75,6 +76,19 @@ void dijkstra(int root) {
 
     //繋がっているもので最小のものを持ってくる
     //持ってきたら周りをupdateする
+   
+    int *targetting_cost = connectedArray(sptSet, root);
+
+    int min = INF;
+    for (i = 0; i < NNODE; i++) {
+	if (targetting_cost[i] < min) {
+	    min = targetting_cost;
+	}
+    }
+
+    int u = minDistance(dist, sptSet, root);
+
+    
 
 
 }

@@ -71,8 +71,8 @@ void dijkstra(int graph[V][V], int src)
 			// smaller than current value of dist[v] 
             //only if the node has not been calculated yet
             //the node is connected
-            //
-			if (!sptSet[v] && graph[u][v] && dist[u] != INT_MAX 
+            //if dist[u] == INF_MAX then it means dist[u] != INF_MAX
+			if (!sptSet[v] && graph[u][v]  
 				&& dist[u] + graph[u][v] < dist[v]) 
 				dist[v] = dist[u] + graph[u][v]; 
 	} 
