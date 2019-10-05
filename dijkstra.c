@@ -1,4 +1,4 @@
-// 61706613 H“¡‰lm Eiji Kudo
+// 61706613 èŸ¾ï½¥é˜¯ï½¤è¿¹å¸›ï½£ï½« Eiji Kudo
 
 #include <stdio.h>
 
@@ -83,7 +83,28 @@ void dijkstra(int root) {
 
 int main() {
 
+    //error handling
     int i;
+    int input_judge = 0;
+    for (i = 0; i < NNODE; i++) {
+	input_judge = 0;
+	int j;
+	for (j = 0; j < NNODE; j++) {
+	    if (cost[i][j] == 0) {
+		input_judge++;
+	    }
+	    if (cost[i][j] > INF) {
+		printf("Some of the cost is larger than INF\n");
+		return 1;
+	    }
+	}
+
+	if (input_judge != 1) {
+	    printf("This input is incorrect!\n");
+	    return 1;
+	}
+    }
+
     for (i = 0; i < NNODE; i++) {
         dijkstra(i);
         printf("root node %c:\n", 'A' + i);
