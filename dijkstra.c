@@ -1,4 +1,4 @@
-// 61706613 蟾･阯､迹帛｣ｫ Eiji Kudo
+// 61706613 Eiji Kudo
 
 #include <stdio.h>
 
