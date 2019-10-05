@@ -19,7 +19,7 @@ int prev[NNODE];
 
 // determiend input
 
-// Eiji's solution
+// From here: Eiji's solution
 
 
 #define TRUE 1
