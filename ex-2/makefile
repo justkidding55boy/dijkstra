@@ -1,5 +1,2 @@
-bufcache: main.o getblk.o
-	gcc -o bufcache main.o getblk.o
-
-main.o: main.c getblk.c buf.h
-	gcc 
+bufcache: main.c getblk.c buf.h
+	gcc -o bufcache main.c getblk.c 
