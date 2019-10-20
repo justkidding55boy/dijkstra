@@ -7,3 +7,4 @@
 
 #define NHASH 4
 #define hash(h) ((h)%(NHASH))
+#define BUFSIZE 3

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "buf.h"
 
 extern struct buf_header {
@@ -52,6 +53,7 @@ void insert_bottom(struct buf_header *h, struct buf_header *p, char type)
 		h->free_bp = p;
 	} else {
 		printf("Select the type 'b' or 'f'\n");
+		printf("type:%c\n", type);
 	}
 
 }
@@ -95,8 +97,7 @@ struct buf_header* getblk(int blkno)
 { 	//input: The target Logical Block Number
 	//output: the pointer for the locked buf_header
 	struct buf_header *p = NULL;
-	while (p->blkno != blkno) {
-		//while buffer not found
+	do {
 		if ((p = hash_search(blkno)) != NULL) {
 		//if buffer in the hash queue	
 			if ((p->stat & STAT_LOCKED) == STAT_LOCKED) {
@@ -120,6 +121,7 @@ struct buf_header* getblk(int blkno)
 			//if no buffer in the free list
 				/*scenario 4*/
 				//sleep();
+				printf("scenario 4\n");
 				printf("Process goes to sleep\n");
 				return NULL;
 			}
@@ -135,14 +137,16 @@ struct buf_header* getblk(int blkno)
 			}
 			/*scenario 2*/
 			//remove the buffer from the old hash queue;
-			remove_buffer(replaced_buffer, 'h');
+			remove_buffer(replaced_buffer, 'b');
 			//put the buffer on the new hash queue;
 			int h = hash(blkno);
-			insert_bottom(&hash_head[h], p, 'h');
+			p = malloc(sizeof(struct buf_header));
+			insert_bottom(&hash_head[h], p, 'b');
 			
 			//return the pointer to the buffer;
 			return p;
 		}
-	}
+	} while (p->blkno != blkno); 
+		//while buffer not found
 
 }
