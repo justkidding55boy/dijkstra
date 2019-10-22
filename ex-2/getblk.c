@@ -2,19 +2,10 @@
 #include <stdlib.h>
 #include "buf.h"
 
-extern struct buf_header {
-	int blkno;					/*Logical Block Number*/
-	struct buf_header *hash_fp; /*The forward hash queue pointer*/
-	struct buf_header *hash_bp; /*The backward hash queue pointer*/
-	unsigned int stat;			/*The status of the buffer*/
-	struct buf_header *free_fp; /*The forward free list pointer*/
-	struct buf_header *free_bp; /*The backward free list pointer*/
-	char *cache_data; 			/*The pointer to the cache data*/
-};
-
 extern struct buf_header hash_head[NHASH];
 extern struct buf_header free_head;
-
+//init.c
+extern struct buf_header* make_card(int blkno);
 
 void insert_head(struct buf_header *h, struct buf_header *p, char type)
 {
@@ -141,6 +132,7 @@ struct buf_header* getblk(int blkno)
 			//put the buffer on the new hash queue;
 			int h = hash(blkno);
 			p = malloc(sizeof(struct buf_header));
+			p = make_card(blkno);
 			insert_bottom(&hash_head[h], p, 'b');
 			
 			//return the pointer to the buffer;
