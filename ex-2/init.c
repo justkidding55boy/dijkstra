@@ -76,10 +76,12 @@ void buf_print_with_bufno(int bufno)
 
 	int stat_array[6];
 	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
+
 	int i;
 	for (i = 0; i < 6; i++) {
-		stat_array[i] = (int)pow(2, i);
+		stat_array[5-i] = (int)pow(2, i);
 	}
+
 
 	int blkno_array[NHASH*BUFSIZE];
 	get_blkno_array(blkno_array);
@@ -90,7 +92,7 @@ void buf_print_with_bufno(int bufno)
 
 	int j;
 	for (j = 0; j < 6; j++) {
-		if (stat_array[j] && p->stat == stat_array[i]) {
+		if ((stat_array[j] & p->stat) == stat_array[j]) {
 			printf("%c", stat_char[j]);
 		} else {
 			printf("-");
@@ -128,6 +130,10 @@ int get_bufno_with_blkno(int blkno)
 
 void hash_print_with_hash(int hash)
 {
+	if (0 > hash || hash > NHASH) {
+		fprintf(stderr, "hash value: 0 ~ %d\n", NHASH);
+		return ;
+	}
 
 	struct buf_header* p;
 
@@ -185,14 +191,36 @@ void hash_print_with_argv(int argc, char *argv[])
 	}
 }
 
-void status_set(int blkno, char stat)
-{
+void status_set_reset(int blkno, char stat, char type)
+{// set the stat to the blkno
+
 	struct buf_header *p = hash_search(blkno);
 	if (p == NULL) {
 		fprintf(stderr, "blkno not found\n");
 		return ;
 	}
 
+	int stat_array[6];
+	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
 
-	p->stat |= stat;
+	int i;
+	for (i = 0; i < 6; i++) {
+		stat_array[5-i] = (int)pow(2, i);
+	}
+
+	for (i = 0; i < sizeof(stat_char); i++) {
+		if (stat_char[i] == stat) {
+			if (type == 's') {
+				p->stat |= stat_array[i]; 
+			} else {
+				p->stat &= ~stat_array[i]; 
+			}
+		}
+	}
+
+}
+
+void status_rest(int blkno, char stat)
+{
+
 }

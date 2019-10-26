@@ -23,6 +23,7 @@ extern int free_proc();
 extern int buf_proc();
 extern int help_proc();
 extern int set_proc();
+extern int reset_proc();
 
 struct command_table cmd_tbl[] = {
 	{"getblk", getblk_proc, "getblk n", "do getblk(n) with blkno n"},
@@ -34,6 +35,7 @@ struct command_table cmd_tbl[] = {
 	{"buf", buf_proc, "buf or buf [n...]", "Display the designated buf status with the arguments. Without arguments, show all the buf status"},
 	{"help", help_proc, "help", "Show the command information"},
 	{"set", set_proc, "set n stat [stat...]", "set the status to the buffer of the blkno n"},
+	{"reset", reset_proc, "reset n stat [stat...]", "reset the status to the buffer of the blkno"},
 	{NULL, NULL}
 };
 

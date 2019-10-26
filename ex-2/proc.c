@@ -103,14 +103,26 @@ int hash_proc(int argc, char *argv[])
 	return 0;
 }
 
-extern void status_set(int blkno, char stat);
+extern void status_set_reset(int blkno, char stat, char type);
 int set_proc(int argc, char *argv[])
 {
 
 	if (argc <= 2) {
 		return 1;
 	}
-	status_set(atoi(argv[1]), argv[2][0]);
+	status_set_reset(atoi(argv[1]), argv[2][0], 's');
 	return 0;
 
+}
+
+int reset_proc(int argc, char *argv[])
+{
+	if (argc > 3 || argc <= 2) {
+		return 1;
+	}
+
+	status_set_reset(atoi(argv[1]), argv[2][0], 'r');
+
+
+	return 0;
 }
