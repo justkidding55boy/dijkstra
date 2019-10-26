@@ -107,10 +107,33 @@ extern void status_set_reset(int blkno, char stat, char type);
 int set_proc(int argc, char *argv[])
 {
 
-	if (argc <= 2) {
+	if (argc > 3 || argc <= 2) {
 		return 1;
 	}
-	status_set_reset(atoi(argv[1]), argv[2][0], 's');
+
+	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
+
+	int i;
+	for (i = 0; i < sizeof(stat_char); i++) {
+		if (strchr(argv[2], stat_char[i]) == NULL) {
+			fprintf(stderr, "The status should be ");
+			int j;
+			for (j = 0; j <sizeof(stat_char); j++) {
+				fprintf(stderr, "%c", stat_char[j]);
+			}
+			fprintf(stderr, "\n");
+
+			return 1;
+		}
+	}
+			
+
+
+	int size = sizeof(argv[2]);
+	for (i = 0; i < size; i++) {
+		status_set_reset(atoi(argv[1]), argv[2][i], 's');
+	}
+
 	return 0;
 
 }
@@ -120,9 +143,25 @@ int reset_proc(int argc, char *argv[])
 	if (argc > 3 || argc <= 2) {
 		return 1;
 	}
+	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
 
-	status_set_reset(atoi(argv[1]), argv[2][0], 'r');
+	int i;
+	for (i = 0; i < sizeof(stat_char); i++) {
+		if (strchr(argv[2], stat_char[i]) == NULL) {
+			fprintf(stderr, "The status should be ");
+			int j;
+			for (j = 0; j <sizeof(stat_char); j++) {
+				fprintf(stderr, "%c", stat_char[j]);
+			}
+			fprintf(stderr, "\n");
+			return 1;
+		}
+	}
+	int size = sizeof(argv[2]);
 
+	for (i = 0; i < size; i++) {
+		status_set_reset(atoi(argv[1]), argv[2][i], 'r');
+	}
 
 	return 0;
 }

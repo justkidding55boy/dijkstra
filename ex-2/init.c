@@ -215,12 +215,11 @@ void status_set_reset(int blkno, char stat, char type)
 			} else {
 				p->stat &= ~stat_array[i]; 
 			}
+			break;
 		}
+		
 	}
 
 }
 
-void status_rest(int blkno, char stat)
-{
 
-}
