@@ -27,3 +27,9 @@ struct buf_header {
 	char *cache_data; 			/*The pointer to the cache data*/
 };
 
+struct command_table {
+	char *cmd;
+	int (*func)(int, char *[]);
+	char *format;
+	char *desc;
+};

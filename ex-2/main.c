@@ -8,29 +8,32 @@ struct buf_header free_head;
 extern struct buf_header* getblk(int);
 
 //init.c
-extern void hash_print();
-extern void free_print();
+
 extern void insert_to_initlist();
 
 //input_line.c
 extern void getargs(int *argc, char *argv[]);
 
 //proc.c
-extern void getblk_proc();
-extern void quit_proc();
-extern void init_proc();
-extern void hash_proc();
-extern void free_proc();
+extern int getblk_proc();
+extern int quit_proc();
+extern int init_proc();
+extern int hash_proc();
+extern int free_proc();
+extern int buf_proc();
+extern int help_proc();
+extern int set_proc();
 
-struct command_table {
-	char *cmd;
-	void (*func)(int, char *[]);
-} cmd_tbl[] = {
-	{"getblk", getblk_proc},
-	{"quit", quit_proc},
-	{"init", init_proc},
-	{"hash", hash_proc},
-	{"free", free_proc},
+struct command_table cmd_tbl[] = {
+	{"getblk", getblk_proc, "getblk n", "do getblk(n) with blkno n"},
+	{"quit", quit_proc, "quit", "quit this process"},
+	{"init", init_proc, "init", "initialize the hash list and the free list"},
+	{"hash", hash_proc, "hash or hash [n...]", 
+		"display the entire hash list without the argument or the hash listswith the designated hash numbers. The argument n is the wanted hash value"},
+	{"free", free_proc, "free", "display the free list"},
+	{"buf", buf_proc, "buf or buf [n...]", "Display the designated buf status with the arguments. Without arguments, show all the buf status"},
+	{"help", help_proc, "help", "Show the command information"},
+	{"set", set_proc, "set n stat [stat...]", "set the status to the buffer of the blkno n"},
 	{NULL, NULL}
 };
 
@@ -38,13 +41,7 @@ int main()
 {
 	//initialization process
 
-
-	//insert the initial cards
-	//insert_freecard();
-
-	init_proc();	
-	hash_print();
-	free_print();
+	init_proc();
 
 	while(1)  {
 		int my_argc;
@@ -62,17 +59,29 @@ int main()
 		/*
 		for (i = 0; i < my_argc; i++) {
 			printf("argv[%d]: %s\n", i, my_argv[i]);
-		}*/
+		} */
 
+		int err=0;
 		struct command_table *p;
 		for (p = cmd_tbl; p->cmd; p++) {
 			if (strcmp(my_argv[0], p->cmd) == 0) {
-				(*p->func)(my_argc, my_argv);
+				err = (*p->func)(my_argc, my_argv);
 				break;
 			}
 		}
 
+		if (err == 1) {
+			struct command_table *t;
+			for (t = cmd_tbl; t->cmd; t++) {	
+				if (strcmp(t->cmd, my_argv[0]) == 0) {
+					fprintf(stderr, "usage: %s\ndescription: %s\n", t->format, t->desc);
+				}
+			}
+		}
 
+		if (p->cmd == NULL) {
+			fprintf(stderr, "%s: command not found\n", my_argv[0]);
+		}
 
 	}
 

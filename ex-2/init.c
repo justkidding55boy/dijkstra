@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "buf.h"
+#include <math.h>
+#include <ctype.h>
 
 extern struct buf_header hash_head[NHASH];
 extern struct buf_header free_head;
@@ -42,20 +42,6 @@ void insert_to_initlist()
 	}
 }
 
-void hash_print()
-{
-	struct buf_header* p;
-	printf("print hash table\n");
-	int i;
-	for (i = 0; i < NHASH; i++) {
-		printf("hash[%d] ", i );
-		for (p = hash_head[i].hash_fp; p != &hash_head[i]; p = p->hash_fp ) {
-			printf("%d ", p->blkno);
-		}
-		printf("\n");
-	}
-}
-
 void free_print()
 {
 	struct buf_header* p;
@@ -68,5 +54,145 @@ void free_print()
 
 }
 
+void get_blkno_array(int *array)
+{
+	struct buf_header* p;
+	int i;
+	int cnt = 0;
+	for (i = 0; i < NHASH; i++) {
+		for (p = hash_head[i].hash_fp; p != &hash_head[i]; p = p->hash_fp ) {
+			array[cnt++] = p->blkno;
+		}
+	}
+	
+}
+
+void buf_print_with_bufno(int bufno)
+{
+	if (NHASH*BUFSIZE <= bufno || bufno < 0) {
+		fprintf(stderr, "usage:buf 0 ~ %d\n", NHASH*BUFSIZE-1);
+		return ;
+	}
+
+	int stat_array[6];
+	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
+	int i;
+	for (i = 0; i < 6; i++) {
+		stat_array[i] = (int)pow(2, i);
+	}
+
+	int blkno_array[NHASH*BUFSIZE];
+	get_blkno_array(blkno_array);
+	int blkno = blkno_array[bufno];
+
+	struct  buf_header* p = hash_search(blkno);
+	printf("[%2d: %2d ", bufno, blkno);
+
+	int j;
+	for (j = 0; j < 6; j++) {
+		if (stat_array[j] && p->stat == stat_array[i]) {
+			printf("%c", stat_char[j]);
+		} else {
+			printf("-");
+		}
+	}
+
+	printf("]");
 
 
+}
+
+void buf_print()
+{
+	int i;
+	for (i = 0; i < NHASH*BUFSIZE; i++) {
+		buf_print_with_bufno(i);
+		printf("\n");
+	}
+	
+}
+
+int get_bufno_with_blkno(int blkno)
+{
+	int blkno_array[NHASH*BUFSIZE];
+	get_blkno_array(blkno_array);
+	int cnt;
+	for (cnt = 0; cnt < NHASH*BUFSIZE; cnt++) {
+		if (blkno_array[cnt] == blkno) {
+			break;
+		}
+	}
+
+	return cnt;
+}
+
+void hash_print_with_hash(int hash)
+{
+
+	struct buf_header* p;
+
+	printf("%d: ", hash);
+	for (p = hash_head[hash].hash_fp; p != &hash_head[hash]; p = p->hash_fp ) {
+		buf_print_with_bufno(get_bufno_with_blkno(p->blkno));
+		printf(" ");
+		//printf("%d ", p->blkno);
+	}
+	printf("\n");
+
+}
+
+int sisdigit(char *string)
+	//true: not 0
+	//false: 0
+{
+	int len = strlen(string);
+	int i;
+	int result = 1;
+	for (i = 0; i < len && result; i++) {
+		result = isdigit(*(string + i));
+	}
+
+	return result;
+}
+
+void buf_print_with_argv(int argc, char *argv[])
+{
+	int i, errcnt = 0;
+	for (i = 1; i < argc; i++) {
+		if (sisdigit(argv[i])) {
+			buf_print_with_bufno(atoi(argv[i]));
+			printf("\n");
+		} else {
+			errcnt == 0 ?
+				fprintf(stderr, "The argument should be in the proper range\n"):1;
+			errcnt++;
+		}
+
+	}
+}
+
+void hash_print_with_argv(int argc, char *argv[])
+{
+	int i, errcnt = 0;
+	for (i = 1; i < argc; i++) {
+		if (sisdigit(argv[i])) {
+			hash_print_with_hash(atoi(argv[i]));
+		} else {
+			errcnt == 0 ?
+				fprintf(stderr, "The argument should be the hash\n"):1;
+			errcnt++;
+		}
+	}
+}
+
+void status_set(int blkno, char stat)
+{
+	struct buf_header *p = hash_search(blkno);
+	if (p == NULL) {
+		fprintf(stderr, "blkno not found\n");
+		return ;
+	}
+
+
+	p->stat |= stat;
+}

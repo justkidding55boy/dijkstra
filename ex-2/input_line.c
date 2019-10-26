@@ -21,6 +21,15 @@ void getargs(int *argc, char *argv[])
 		if (cnt++ == MAXCHAR-1) {
 			break;
 		}
+
+		if (c == EOF) {
+			printf("\n");
+			exit(0);
+		}
+
+		if (*argc  > MAXCOM-2) {
+			break;
+		}
 		
 		if ('!'<= c && c <= '~') {
 			argv[*argc][charcnt++] = c;
@@ -30,8 +39,7 @@ void getargs(int *argc, char *argv[])
 			argv[*argc][charcnt] = '\0';
 			charcnt = 0;
 			*argc += 1;
-		} 
-		
+		} 		
 	} while (c !=  '\n');
 
 	
