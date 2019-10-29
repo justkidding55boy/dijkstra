@@ -83,6 +83,27 @@ struct buf_header* hash_search(int blkno)
 
 }
 
+void brelse(struct buf_header *buffer)
+{
+	//wake up all procs; event, waiting for any buffer to become free
+	//wakeup();
+	printf("wake up all procs; event, waiting for any buffer\n");
+	
+	//wake up all procs; event, waiting for this buffer to become free
+	//wakeup();
+	printf("wake up all procs; event, waiting for this buffer\n");
+
+	//raise processor execution level to block interrupts
+	//raise_cpu_level();
+	if ((buffer->stat&STAT_VALID) == STAT_VALID || (buffer->stat&STAT_OLD) == STAT_OLD) {
+		//enqueue the buffer at the end of the free list
+		insert_bottom(&free_head, buffer, 'f');
+	} else {
+		insert_head(&free_head, buffer, 'f');
+	}
+	//lower_cpu_level();
+}
+
 
 struct buf_header* getblk(int blkno)
 { 	//input: The target Logical Block Number
@@ -94,11 +115,13 @@ struct buf_header* getblk(int blkno)
 			if ((p->stat & STAT_LOCKED) == STAT_LOCKED) {
 			//if the buffer is locked	
 				/*scenario 5*/
+				printf("scenario 5\n");
 				// sleep();
 				printf("Process goes to sleep\n");
 				return NULL;
 			}
 			/*scenario 1*/
+			printf("scenario 1\n");
 			//make the buffer locked;
 			p->stat |= STAT_LOCKED;
 
@@ -119,26 +142,41 @@ struct buf_header* getblk(int blkno)
 
 			//remove the top buffer from the free list;
 			struct buf_header *replaced_buffer = free_head.free_fp;
+			replaced_buffer->stat |= STAT_LOCKED;
 			remove_buffer(replaced_buffer, 'f');
+
 			if ((replaced_buffer->stat & STAT_DWR) == STAT_DWR) {
 			//if the buffer marked for delayed writing
 				/*scenario 3*/
+				printf("scenario 3\n");
 				//asynchronous write buffer to disk;
 				continue;
 			}
 			/*scenario 2*/
+			printf("scenario 2\n");
 			//remove the buffer from the old hash queue;
 			remove_buffer(replaced_buffer, 'b');
+
+			//reset VALID and Replace it with the new buffer
+			replaced_buffer->stat &= ~STAT_VALID;
+
 			//put the buffer on the new hash queue;
 			int h = hash(blkno);
-			p = malloc(sizeof(struct buf_header));
-			p = make_card(blkno);
+			p = replaced_buffer;
+
+			//load the data from HDD
+			p->stat |= STAT_KRDWR;
+			p->blkno = blkno;
+
+			//finish the loading
+			p->stat &= ~STAT_KRDWR;
 			insert_bottom(&hash_head[h], p, 'b');
-			
+			p->stat |= STAT_VALID;	
 			//return the pointer to the buffer;
 			return p;
 		}
 	} while (p->blkno != blkno); 
 		//while buffer not found
 
+	return NULL;
 }

@@ -30,6 +30,8 @@ void insert_to_initlist()
 	int i;
 	for (i = 0; i < NHASH * BUFSIZE; i++) {
 		struct buf_header *p = make_card(hash_list[i]);
+		p->stat |= STAT_VALID;
+		p->stat |= STAT_LOCKED;
 		int h = hash(hash_list[i]);
 		insert_bottom(&hash_head[h], p, 'b');
 	}
@@ -37,7 +39,7 @@ void insert_to_initlist()
 	for (i = 0;  i < 6; i++) {
 		int num = free_list[i];
 		struct buf_header *p = hash_search(num);
-
+		p->stat &= ~STAT_LOCKED;
 		insert_bottom(&free_head, p, 'f');
 	}
 }
