@@ -19,7 +19,10 @@ int getblk_proc(int argc, char *argv[])
 	}
 	
 	struct buf_header* p = getblk(atoi(argv[1]));	
-	printf("take out blkno:%d\n", p->blkno);
+	if (p != NULL)
+		printf("take out blkno:%d\n", p->blkno);
+	else
+		fprintf(stderr, "%s is locked\n", argv[1]);
 	return 0;
 }
 
