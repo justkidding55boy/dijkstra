@@ -113,20 +113,25 @@ int set_proc(int argc, char *argv[])
 
 	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
 
-	int i;
+	int i, err = 0;
 	for (i = 0; i < sizeof(stat_char); i++) {
-		if (strchr(argv[2], stat_char[i]) == NULL) {
-			fprintf(stderr, "The status should be ");
-			int j;
-			for (j = 0; j <sizeof(stat_char); j++) {
-				fprintf(stderr, "%c", stat_char[j]);
-			}
-			fprintf(stderr, "\n");
-
-			return 1;
+		if (strchr(argv[2], stat_char[i]) != NULL) {
+			err = 0;
+			break;
+		} else {
+			err = 1;
 		}
 	}
-			
+
+	if (err == 1) {
+		fprintf(stderr, "The status should be ");
+		int j;
+		for (j = 0; j <sizeof(stat_char); j++) {
+			fprintf(stderr, "%c", stat_char[j]);
+		}
+		fprintf(stderr, "\n");
+		return 1;
+	}	
 
 
 	int size = sizeof(argv[2]);
@@ -145,17 +150,24 @@ int reset_proc(int argc, char *argv[])
 	}
 	char stat_char[6] = {'O', 'W', 'K', 'D', 'V', 'L'};
 
-	int i;
+	int i, err = 0;
 	for (i = 0; i < sizeof(stat_char); i++) {
-		if (strchr(argv[2], stat_char[i]) == NULL) {
-			fprintf(stderr, "The status should be ");
-			int j;
-			for (j = 0; j <sizeof(stat_char); j++) {
-				fprintf(stderr, "%c", stat_char[j]);
-			}
-			fprintf(stderr, "\n");
-			return 1;
+		if (strchr(argv[2], stat_char[i]) != NULL) {
+			err = 0;
+			break;
+		} else {
+			err = 1;
 		}
+	}
+
+	if (err == 1) {
+		fprintf(stderr, "The status should be ");
+		int j;
+		for (j = 0; j <sizeof(stat_char); j++) {
+			fprintf(stderr, "%c", stat_char[j]);
+		}
+		fprintf(stderr, "\n");
+		return 1;
 	}
 	int size = sizeof(argv[2]);
 
