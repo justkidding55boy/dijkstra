@@ -14,7 +14,7 @@ extern struct buf_header free_head;
 int sisdigit(char*);
 int getblk_proc(int argc, char *argv[]) 
 {	
-	if (argc > 2 || !sisdigit(argv[1])) {
+	if (argc != 2 || !sisdigit(argv[1])) {
 		return 1;
 	}
 	
@@ -23,6 +23,21 @@ int getblk_proc(int argc, char *argv[])
 		printf("take out blkno:%d\n", p->blkno);
 	else
 		fprintf(stderr, "%s is locked\n", argv[1]);
+	return 0;
+}
+extern void brelse(struct buf_header *);
+extern struct buf_header* hash_search(int);
+int brelse_proc(int argc, char *argv[])
+{
+	if (argc != 2 || !sisdigit(argv[1])) {
+		return 1;
+	}
+
+	struct buf_header*p = hash_search(atoi(argv[1]));
+	if (p != NULL)
+		brelse(p);
+	else
+		return 1;
 	return 0;
 }
 
@@ -107,8 +122,33 @@ int hash_proc(int argc, char *argv[])
 }
 
 extern void status_set_reset(int blkno, char stat, char type);
+
+struct status_help_table {
+	char stat;
+	char *desc;
+} status_help[] = {
+	{'O', "OLD: The data is old"},
+	{'W', "WAITED: Some process is waiting for this buffer"},
+	{'K', "KRDWR: The kernel is reading/writing"},
+	{'D', "DWR: This is a writed buffer"},
+	{'V', "VALID: This is a valid buffer"},
+	{'L', "LOCKED: This is a locked buffer"},
+	{0, NULL}
+};
+
 int set_proc(int argc, char *argv[])
 {
+	if (strcmp(argv[1], "help") == 0) {
+		if (argc == 2) {
+			struct status_help_table *p;
+			for (p = status_help; p->stat; p++) {
+				fprintf(stderr, "%c -- %s\n", p->stat, p->desc);
+			}
+			return 0;
+		} else {
+			return 1;
+		}
+	}
 
 	if (argc > 3 || argc <= 2) {
 		return 1;

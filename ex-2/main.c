@@ -24,6 +24,7 @@ extern int buf_proc();
 extern int help_proc();
 extern int set_proc();
 extern int reset_proc();
+extern int brelse_proc();
 
 struct command_table cmd_tbl[] = {
 	{"getblk", getblk_proc, "getblk n", "do getblk(n) with blkno n"},
@@ -34,8 +35,9 @@ struct command_table cmd_tbl[] = {
 	{"free", free_proc, "free", "display the free list"},
 	{"buf", buf_proc, "buf or buf [n...]", "Display the designated buf status with the arguments. Without arguments, show all the buf status"},
 	{"help", help_proc, "help", "Show the command information"},
-	{"set", set_proc, "set n stat [stat...]", "set the status to the buffer of the blkno n"},
+	{"set", set_proc, "set n stat [stat...]", "set the status to the buffer of the blkno n. Allowed status: OWKDVL, refer set help for further detail"},
 	{"reset", reset_proc, "reset n stat [stat...]", "reset the status to the buffer of the blkno"},
+	{"brelse", brelse_proc, "brelse n", "brelse the buffer of blkno n\n"},
 	{NULL, NULL}
 };
 
