@@ -95,13 +95,21 @@ void brelse(struct buf_header *buffer)
 
 	//raise processor execution level to block interrupts
 	//raise_cpu_level();
-	if ((buffer->stat&STAT_VALID) == STAT_VALID || (buffer->stat&STAT_OLD) == STAT_OLD) {
+
+
+	if ((buffer->stat&STAT_VALID) == STAT_VALID && (buffer->stat&STAT_OLD) != STAT_OLD) {
 		//enqueue the buffer at the end of the free list
 		insert_bottom(&free_head, buffer, 'f');
+		printf("insert the buffer to the bottom of the free list\n");
 	} else {
 		insert_head(&free_head, buffer, 'f');
+		printf("insert the buffer to the head of the free list\n");
+		buffer->stat &= ~STAT_OLD;
+		buffer->stat &= ~STAT_DWR;
 	}
 	//lower_cpu_level();
+	//unlock
+	buffer->stat &= ~STAT_LOCKED;
 }
 
 
@@ -150,6 +158,9 @@ struct buf_header* getblk(int blkno)
 				/*scenario 3*/
 				printf("scenario 3\n");
 				//asynchronous write buffer to disk;
+				p = free_head.free_fp;
+				replaced_buffer->stat |= STAT_LOCKED;
+				replaced_buffer->stat |= STAT_OLD;
 				continue;
 			}
 			/*scenario 2*/
