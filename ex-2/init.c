@@ -169,7 +169,7 @@ void buf_print_with_argv(int argc, char *argv[])
 	for (i = 1; i < argc; i++) {
 		if (sisdigit(argv[i])) {
 			buf_print_with_bufno(atoi(argv[i]));
-			printf("\n");
+			printf("\n");	
 		} else {
 			errcnt == 0 ?
 				fprintf(stderr, "The argument should be in the proper range\n"):1;
@@ -184,7 +184,12 @@ void hash_print_with_argv(int argc, char *argv[])
 	int i, errcnt = 0;
 	for (i = 1; i < argc; i++) {
 		if (sisdigit(argv[i])) {
-			hash_print_with_hash(atoi(argv[i]));
+			int a = atoi(argv[i]);
+			if (0 <=a && a < NHASH) {
+				hash_print_with_hash(atoi(argv[i]));
+			} else {
+				fprintf(stderr, "illegal hash value: %d\n", a);
+			}
 		} else {
 			errcnt == 0 ?
 				fprintf(stderr, "The argument should be the hash\n"):1;

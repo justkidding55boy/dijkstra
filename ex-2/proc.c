@@ -34,7 +34,7 @@ int brelse_proc(int argc, char *argv[])
 	}
 
 	struct buf_header*p = hash_search(atoi(argv[1]));
-	if (p != NULL)
+	if (p != NULL && ((p->stat & STAT_LOCKED) == STAT_LOCKED))
 		brelse(p);
 	else
 		return 1;
