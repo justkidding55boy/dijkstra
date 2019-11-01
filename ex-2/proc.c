@@ -11,7 +11,7 @@ extern void free_print();
 extern struct buf_header hash_head[NHASH];
 extern struct buf_header free_head;
 
-int sisdigit(char*);
+extern int sisdigit(char*);
 int getblk_proc(int argc, char *argv[]) 
 {	
 	if (argc != 2 || !sisdigit(argv[1])) {
@@ -175,6 +175,10 @@ int set_proc(int argc, char *argv[])
 		fprintf(stderr, "\n");
 		return 1;
 	}	
+
+	if (!sisdigit(argv[1])) {
+		return 1;
+	}
 
 
 	int size = sizeof(argv[2]);

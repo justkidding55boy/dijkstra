@@ -75,7 +75,7 @@ void get_blkno_array(int *array)
 void buf_print_with_bufno(int bufno)
 {
 	if (NHASH*BUFSIZE <= bufno || bufno < 0) {
-		fprintf(stderr, "usage:buf 0 ~ %d\n", NHASH*BUFSIZE-1);
+		fprintf(stderr, "usage:buf 0 ~ %d", NHASH*BUFSIZE-1);
 		return ;
 	}
 
