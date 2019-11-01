@@ -216,6 +216,11 @@ int reset_proc(int argc, char *argv[])
 		fprintf(stderr, "\n");
 		return 1;
 	}
+
+	if (!sisdigit(argv[1])) {
+		return 1;
+	}
+
 	int size = sizeof(argv[2]);
 
 	for (i = 0; i < size; i++) {
