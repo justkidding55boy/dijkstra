@@ -91,7 +91,10 @@ void brelse(struct buf_header *buffer)
 	
 	//wake up all procs; event, waiting for this buffer to become free
 	//wakeup();
-	printf("wake up all procs; event, waiting for this buffer\n");
+	if ((buffer->stat & STAT_WAITED) == STAT_WAITED) {
+		printf("wake up all procs; event, waiting for this buffer\n");
+		buffer->stat &= ~STAT_WAITED;
+	}
 
 	//raise processor execution level to block interrupts
 	//raise_cpu_level();
@@ -126,6 +129,7 @@ struct buf_header* getblk(int blkno)
 				printf("scenario 5\n");
 				// sleep();
 				printf("Process goes to sleep\n");
+				p->stat |= STAT_WAITED;
 				return NULL;
 			}
 			/*scenario 1*/
@@ -159,7 +163,8 @@ struct buf_header* getblk(int blkno)
 				printf("scenario 3\n");
 				//asynchronous write buffer to disk;
 				p = free_head.free_fp;
-				replaced_buffer->stat |= STAT_LOCKED;
+				replaced_buffer->stat |= STAT_KRDWR;
+				replaced_buffer->stat &= ~STAT_DWR;
 				replaced_buffer->stat |= STAT_OLD;
 				continue;
 			}
@@ -182,7 +187,7 @@ struct buf_header* getblk(int blkno)
 			//finish the loading
 			p->stat &= ~STAT_KRDWR;
 			insert_bottom(&hash_head[h], p, 'b');
-			p->stat |= STAT_VALID;	
+			//p->stat |= STAT_VALID;	
 			//return the pointer to the buffer;
 			return p;
 		}

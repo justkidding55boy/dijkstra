@@ -43,13 +43,16 @@ void insert_to_initlist()
 		insert_bottom(&free_head, p, 'f');
 	}
 }
+void buf_print_with_bufno(int bufno);
+int get_bufno_with_blkno(int blkno);
 
 void free_print()
 {
 	struct buf_header* p;
 	printf("free list\n ");
 	for (p = free_head.free_fp; p != &free_head; p = p->free_fp ) {
-		printf("%d ", p->blkno);
+		int bufno = get_bufno_with_blkno(p->blkno);
+		buf_print_with_bufno(bufno);
 	}
 
 	printf("\n");
