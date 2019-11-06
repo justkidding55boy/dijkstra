@@ -35,7 +35,7 @@ struct command_table cmd_tbl[] = {
 	{"free", free_proc, "free", "display the free list"},
 	{"buf", buf_proc, "buf or buf [n...]", "Display the designated buf status with the arguments. Without arguments, show all the buf status"},
 	{"help", help_proc, "help", "Show the command information"},
-	{"set", set_proc, "set n stat [stat...]", "set the status to the buffer of the blkno n. Allowed status: OWKDVL, refer set help for further detail"},
+	{"set", set_proc, "set n stat [stat...]", "set the status to the buffer of the blkno n. Allowed status: OWKDVL. For example, set 3 OWK, but not set 3 O W K. Type \"set help\" for further detail"},
 	{"reset", reset_proc, "reset n stat [stat...]", "reset the status to the buffer of the blkno"},
 	{"brelse", brelse_proc, "brelse n", "brelse the buffer of blkno n"},
 	{NULL, NULL}

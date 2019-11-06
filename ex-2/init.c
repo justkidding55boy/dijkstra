@@ -217,9 +217,11 @@ void status_set_reset(int blkno, char stat, char type)
 	for (i = 0; i < 6; i++) {
 		stat_array[5-i] = (int)pow(2, i);
 	}
-
+	
+	int unlist_flg = 1;
 	for (i = 0; i < sizeof(stat_char); i++) {
 		if (stat_char[i] == stat) {
+			unlist_flg = 0;
 			if (type == 's') {
 				p->stat |= stat_array[i]; 
 			} else {
@@ -228,6 +230,10 @@ void status_set_reset(int blkno, char stat, char type)
 			break;
 		}
 		
+	}
+
+	if (unlist_flg == 1) {
+		fprintf(stderr, "%c is not registred as status\n", stat);
 	}
 
 }

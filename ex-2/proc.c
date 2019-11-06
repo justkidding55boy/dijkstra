@@ -181,7 +181,10 @@ int set_proc(int argc, char *argv[])
 	}
 
 
-	int size = sizeof(argv[2]);
+	int size;
+	for(i=0; argv[2][i]!='\0'; i++);
+	size = i;
+
 	for (i = 0; i < size; i++) {
 		status_set_reset(atoi(argv[1]), argv[2][i], 's');
 	}
@@ -221,7 +224,9 @@ int reset_proc(int argc, char *argv[])
 		return 1;
 	}
 
-	int size = sizeof(argv[2]);
+	int size;
+	for(i=0; argv[2][i]!='\0'; i++);
+	size = i;
 
 	for (i = 0; i < size; i++) {
 		status_set_reset(atoi(argv[1]), argv[2][i], 'r');

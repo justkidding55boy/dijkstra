@@ -63,6 +63,7 @@ int main()
     
     //initialization
     my_argc = 0;
+	my_argv = malloc(sizeof(char*) * MAXCOM);
 	int i;
 	for (i = 0; i < MAXCOM; i++) {
 		my_argv[i] = malloc(sizeof(char) * MAXCHAR);
@@ -72,6 +73,7 @@ int main()
 
     for (i = 0; i < my_argc; i++) {
         printf("argv[%d]: %s\n", i, my_argv[i]);
+		printf("sizeof argv: %lu\n", sizeof(my_argv[i])/(sizeof(my_argv[i][0])));
     }
     
 
