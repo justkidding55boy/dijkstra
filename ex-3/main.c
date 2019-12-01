@@ -113,8 +113,14 @@ int main()
 
 			for (i = 0; i < my_argc; i++) {
 				printf("ttype:%s\n", pr_ttype(ttype[i]));
-				if (ttype[i] == TKN_REDIR_OUT) {
-					int fd = open(my_argv[i+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
+				if (ttype[i] == TKN_REDIR_OUT || ttype[i] == TKN_REDIR_APPEND) {
+					int fd;
+					if (ttype[i] == TKN_REDIR_OUT)
+						fd = open(my_argv[i+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
+					if (ttype[i] == TKN_REDIR_APPEND)
+						fd = open(my_argv[i+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
+
+
 					close(1);
 					dup(fd);
 					close(fd);
