@@ -10,7 +10,7 @@ struct tkntype {
 } tkn[] = {
     {TKN_NORMAL,         "NORMAL"},
     {TKN_REDIR_IN,       "REDIR_IN"},
-    {TKN_REDIR_OUR,      "REDIR_OUT"},
+    {TKN_REDIR_OUT,      "REDIR_OUT"},
     {TKN_REDIR_APPEND,   "REDIR_APPEND"},
     {TKN_PIPE,           "PIPE"},
     {TKN_BG,             "BG"},
@@ -119,7 +119,7 @@ char *pr_ttype(int ttype)
 		case TKN_REDIR_IN:
 			return "REDIR_IN";
 			break;
-		case TKN_REDIR_OUR:
+		case TKN_REDIR_OUT:
 			return "REDIR_OUT";
 			break;
 		case TKN_REDIR_APPEND:
@@ -140,9 +140,7 @@ char *pr_ttype(int ttype)
 		case TKN_NONE:
 			return "NONE";
 			break;
-		case TKN_REDIR_OUT:
-			return "REDIR_OUT";
-			break;
+
 		default:
 			return "";
 			break;
