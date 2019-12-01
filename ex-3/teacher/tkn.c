@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <type.h>
+//#include <type.h>
 #include "mysh.h"
 #define TOKENLEN    80
 
@@ -79,7 +79,7 @@ int gettoken(char *token, int len)
     *p = '\0';
     if (i > 0)
         return TKN_NORMAL;
-    else:
+    else
         return TKN_NONE;
 }
 

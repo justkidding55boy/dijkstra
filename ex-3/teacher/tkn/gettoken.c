@@ -23,6 +23,7 @@ struct tkntype {
 
 char *pr_ttype(int);
 
+
 int gettoken(char *token, int len)
 {
     int c, i = 0, type = TKN_NONE;

@@ -1,3 +1,4 @@
+ttype:NORMAL
 
 #include "buf.h"
 #define MAXCHAR 256

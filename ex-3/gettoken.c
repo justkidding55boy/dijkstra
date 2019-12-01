@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "mysh.h"
+#include "buf.h"
 #include <ctype.h>
 #define TOKENLEN    80
 
@@ -23,13 +23,19 @@ struct tkntype {
 
 char *pr_ttype(int);
 
-int gettoken(char *token, int len)
+int gettoken(char *token, int len, char*buf)
 {
-    int c, i = 0, type = TKN_NONE;
+    int c, i = 0;
     char *p = token;
 
     *p = '\0';
-    while(isblank(c = getchar()));
+  //  while(isblank(c = getchar()));
+
+	int bc = 0;
+	do {
+		c = buf[bc++];
+	} while(isblank(c));
+
 
     // if special character, return the corresponding type
     switch(c) {
@@ -37,6 +43,8 @@ int gettoken(char *token, int len)
             return TKN_EOF;
         case '\n':
             return TKN_EOL;
+		case '\0':
+			return TKN_EOL;
         case '&':
             return TKN_BG;
         case '|':
@@ -44,24 +52,26 @@ int gettoken(char *token, int len)
         case '<':
             return TKN_REDIR_IN;
         case '>':
-            if ((c = getchar()) == '>')
+            if ((c = buf[bc++]) == '>')
                 return TKN_REDIR_APPEND;
-            ungetc(c, stdin);
+       //     ungetc(c, stdin);
+			bc--;
             return TKN_REDIR_OUT;
         default:
             break;
-    }
+	} 
 
     // nomal caracter is input
 
-    ungetc(c, stdin);
+    //ungetc(c, stdin);
+	bc--;
     for (i = 0; i < len - 1; i++) {
-        c = getchar();
+        c = buf[bc++];
         if (c != EOF && c != '\n' && c != '&' && c != '<' && c != '>' && c != '|' && !isblank(c))
             *p++ = c;
         else break;
     }
-    ungetc(c, stdin);
+	bc--;
     *p = '\0';
     if (i > 0)
         return TKN_NORMAL;
@@ -69,6 +79,8 @@ int gettoken(char *token, int len)
         return TKN_NONE;
 }
 
+
+/*
 int main()
 {
     char token[TOKENLEN];
@@ -76,7 +88,15 @@ int main()
 
     for (;;) {
         fprintf(stderr, "input: ");
-        while (((ttype = gettoken(token, TOKENLEN)) != TKN_EOL && ttype != TKN_EOF)) {
+		char buf[MAXCHAR];
+		fgets(buf, MAXCHAR-1, stdin);
+        while (1) {
+			ttype = gettoken(token, TOKENLEN, "\n");
+			printf("%s", pr_ttype(ttype));
+	
+			if (ttype == TKN_EOL || ttype == TKN_EOF) {
+				break;
+			}
 
             printf("\tType: %s, \"%s\"\n", pr_ttype(ttype), token);
         }
@@ -87,7 +107,8 @@ int main()
     }
 	putchar('\n');
 	return 0;
-}
+}*/
+
 
 char *pr_ttype(int ttype)
 {

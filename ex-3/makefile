@@ -1,10 +1,10 @@
 .PHONY: dbg clean
 
-mysh: main.c input.c
-	gcc -o mysh main.c getargs.c proc.c
+mysh: main.c getargs.c gettoken.c
+	gcc -o mysh main.c getargs.c proc.c gettoken.c
 
 dbg:
-	gcc -ggdb main.c getargs.c proc.c
+	gcc -ggdb main.c getargs.c proc.c gettoken.c
 	lldb a.out
 
 

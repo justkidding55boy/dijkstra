@@ -1,3 +1,4 @@
+ttype:NORMAL
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -39,7 +40,7 @@ int main()
             exit(0);
         }
         buf[strlen(buf) - 1] = '\0';
-      //  memset(av, 0, MAX_ARGC * MAX_ARGV-1);
+        memset(av, 0, MAX_ARGC * MAX_ARGV-1);
         getargs(&ac, av, buf);
 
         fprintf(stderr, "\t** argv start ** \n");
