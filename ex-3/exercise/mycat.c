@@ -31,13 +31,16 @@ int main(int argc, char *argv[])
 		memset(buf, 0, MAXCHAR);
 		while (read(fd, buf, MAXCHAR)  > 0) {
 			printf("%s", buf);
-			printf("bufend");
+
+			memset(buf, 0, MAXCHAR);
 		}
 
-		printf("\n---------%s-----------\n", filename);
+		if (argc > 3)
+			printf("\n---------%s-----------\n", filename);
 
 	}
 
+	close(fd);
 
 	return 0;
 }
