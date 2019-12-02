@@ -17,7 +17,7 @@
 #define MAXCHAR 256
 struct command_table {
 	char *cmd;
-	int (*func)(int, char *[]);
+	void (*func)(int, char *[]);
 	char *format;
 	char *desc;
 };

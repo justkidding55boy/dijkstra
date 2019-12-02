@@ -5,7 +5,7 @@ void quit_proc(int argc, char **argv)
 	exit(0);
 }
 
-int cd_proc(int argc, char **argv)
+void cd_proc(int argc, char **argv)
 {
 
 	if (argc == 1) {
@@ -21,5 +21,10 @@ int cd_proc(int argc, char **argv)
 			}
 		} 
 	}
-	return 0;
+}
+
+
+void red_do()
+{
+
 }
