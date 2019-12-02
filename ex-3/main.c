@@ -142,14 +142,95 @@ int main()
 						//to the stdin
 						dup2(pfd[i-1][0], 0);
 						close(pfd[i-1][0]); close(pfd[i-1][1]);
+						if (dirflg == 1) {
+							int j;
+							for (j = 0; j < my_argc; j++) {
+								// > and >>
+								if (ttype[j] == TKN_REDIR_OUT || ttype[j] == TKN_REDIR_APPEND) {
+									//openのエラー処理後で
+									int fd;
+									if (ttype[j] == TKN_REDIR_OUT)
+										fd = open(my_argv[j+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
+									if (ttype[j] == TKN_REDIR_APPEND)
+										fd = open(my_argv[j+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
+									// 
+									// fprintf(stderr, "open:%s\nto:%s\n argv[%d]\n", my_argv[j+1], my_argv[pipe_locate[i]+1],j);
+									// fprintf(stderr, "i:%d\n", i);
+
+									if (fd < 0) {
+										perror("open");
+										exit(1);
+									}
+
+									dup2(fd, 1);
+									close(fd);
+									my_argv[j] = NULL;
+
+								}
+
+								// <
+								if (ttype[j] == TKN_REDIR_IN) {
+									int fd = open(my_argv[i+1], O_RDONLY);
+									if (fd < 0) {
+										perror("open");
+										exit(1);
+									}
+									close(0);
+									dup(fd);
+									close(fd);
+									my_argv[j] = NULL;
+								}
+
+
+							}
+							/*
+							for (j = 0; j < MAX_ARGC; j++) {
+								my_argv[j] = (char *)malloc(sizeof(char) * MAX_ARGV);
+								free(my_argv[i]);
+								my_argv[j] = (char *)malloc(sizeof(char) * MAX_ARGV);
+							}*/
+
+						}
+
 					} else {
 						dup2(pfd[i-1][0], 0);
 						dup2(pfd[i][1], 1);
 						close(pfd[i-1][0]); close(pfd[i-1][1]);
 						close(pfd[i][0]); close(pfd[i][1]);
 					}
-				if (pipe_count > 0 && dirflg == 1) {
+
+					// fprintf(stderr, "execvp:%s\n", my_argv[pipe_locate[i]+1]);
+					execvp(my_argv[pipe_locate[i] + 1], my_argv +pipe_locate[i] + 1);
+					exit(0);
+				} //以下 parents
+				 else if (i > 0) {
+					close(pfd[i-1][0]); close(pfd[i-1][1]);
+				}
+
+			}
+
+			int status;
+
+			for (i = 0; i < pipe_count + 1 && pipe_count != 0; i++) {
+				wait(&status);
+			}
+
+		}
+
+		if (pipe_count == 0) {
+
+
+			// if pipe_cnt == 0 and dirflg == 1
+			if ((pid = fork()) < 0) {
+				perror("fork");
+				exit(1);
+			}
+
+			if (pid == 0) {
+				// child process
+				if (dirflg == 1) {
 					for (i = 0; i < my_argc; i++) {
+
 						// > and >>
 						if (ttype[i] == TKN_REDIR_OUT || ttype[i] == TKN_REDIR_APPEND) {
 
@@ -159,7 +240,6 @@ int main()
 								fd = open(my_argv[i+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
 							if (ttype[i] == TKN_REDIR_APPEND)
 								fd = open(my_argv[i+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
-
 
 							if (fd < 0) {
 								perror("open");
@@ -185,79 +265,9 @@ int main()
 							my_argv[i] = NULL;
 						}
 
-
 					}
-					for (i = 0; i < MAX_ARGC; i++) {
-						my_argv[i] = (char *)malloc(sizeof(char) * MAX_ARGV);
-						free(my_argv[i]);
-						my_argv[i] = (char *)malloc(sizeof(char) * MAX_ARGV);
-					}
-			}
-
-					execvp(my_argv[pipe_locate[i] + 1], my_argv +pipe_locate[i] + 1);
-					exit(0);
-				} else if (i > 0) {
-					close(pfd[i-1][0]); close(pfd[i-1][1]);
 				}
 
-			}
-
-			int status;
-
-			for (i = 0; i < pipe_count + 1 && pipe_count != 0; i++) {
-				wait(&status);
-			}
-
-		}
-
-		if (pipe_count == 0 || dirflg == 1) {
-
-			// if pipe_cnt == 0 and dirflg == 1
-			if ((pid = fork()) < 0) {
-				perror("fork");
-				exit(1);
-			}
-
-			if (pid == 0) {
-				// child process
-
-				for (i = 0; i < my_argc; i++) {
-
-					// > and >>
-					if (ttype[i] == TKN_REDIR_OUT || ttype[i] == TKN_REDIR_APPEND) {
-
-						//openのエラー処理後で
-						int fd;
-						if (ttype[i] == TKN_REDIR_OUT)
-							fd = open(my_argv[i+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
-						if (ttype[i] == TKN_REDIR_APPEND)
-							fd = open(my_argv[i+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
-
-						if (fd < 0) {
-							perror("open");
-							exit(1);
-						}
-						close(1);
-						dup(fd);
-						close(fd);
-						my_argv[i] = NULL;
-
-					}
-
-					// <
-					if (ttype[i] == TKN_REDIR_IN) {
-						int fd = open(my_argv[i+1], O_RDONLY);
-						if (fd < 0) {
-							perror("open");
-							exit(1);
-						}
-						close(0);
-						dup(fd);
-						close(fd);
-						my_argv[i] = NULL;
-					}
-
-				}
 
 				//fprintf(stderr, "pipe_cnt: %d, dirflg: %d\n", pipe_count, dirflg);
 //				if ((pipe_count == 0)&&(dirflg == 0)) {
