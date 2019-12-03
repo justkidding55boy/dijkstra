@@ -5,19 +5,13 @@
 //input.c
 extern void getargs(int *, char **, char *);
 
-//proc.c
-extern void quit_proc(int, char**);
-extern void cd_proc(int, char**);
+//proc.case
+extern int proc_check(int, char**);
 
 //gettoken.c
 extern int gettoken(char *token, int len);
 extern char* pr_ttype(int ttype);
-struct command_table cmd_tbl[] = {
-	{"exit", quit_proc},
-	{"quit", quit_proc},
-	{"cd", cd_proc},
-	{NULL, NULL}
-};
+
 
 int main()
 {
@@ -81,26 +75,12 @@ int main()
 	//	if (ttype[i] != TKN_EOL) break;
 
 		// if cd or quit, don't conduct execvp.
-		int flg = 0;
-		struct command_table *p;
-		for (p = cmd_tbl; p->cmd; p++) {
-			if (strcmp(my_argv[0], p->cmd) == 0) {
-				(*p->func)(my_argc, my_argv);
-				flg = 1;
-				break;
-			}
-		}
-		if (flg == 1) {
-			for (i = 0; i < MAX_ARGC; i++) {
-				my_argv[i] = (char *)malloc(sizeof(char) * MAX_ARGV);
-				free(my_argv[i]);
-				my_argv[i] = (char *)malloc(sizeof(char) * MAX_ARGV);
-			}
+		if (proc_check(my_argc, my_argv) == 1) {
 			continue;
 		}
 		// if cd or quit, don't conduct execvp.
 
-		flg = 0;
+		int flg = 0;
         if (strcmp(my_argv[0], ENDWORD) == 0)
             return 0;
 
@@ -126,6 +106,25 @@ int main()
 						//close the stdin and stdout
 						close(pfd[i][0]);
 						close(pfd[i][1]);
+						if (dirflg == 1) {
+							// <
+							int j;
+							for (j = 0; j < my_argc; j++) {
+								if (ttype[j] == TKN_REDIR_IN) {
+									int fd = open(my_argv[j+1], O_RDONLY);
+									// fprintf(stderr, "my_argv[i+1]:%s\n", my_argv[j+1]);
+									if (fd < 0) {
+										perror("open");
+										exit(1);
+									}
+									close(0);
+									dup(fd);
+									close(fd);
+									my_argv[j] = NULL;
+								}
+							}
+						}
+
 					} else if (i == pipe_count) {
 						//to the stdin
 						dup2(pfd[i-1][0], 0);
@@ -155,20 +154,6 @@ int main()
 									my_argv[j] = NULL;
 
 								}
-
-								// <
-								if (ttype[j] == TKN_REDIR_IN) {
-									int fd = open(my_argv[i+1], O_RDONLY);
-									if (fd < 0) {
-										perror("open");
-										exit(1);
-									}
-									close(0);
-									dup(fd);
-									close(fd);
-									my_argv[j] = NULL;
-								}
-
 
 							}
 							/*
