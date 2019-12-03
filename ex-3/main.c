@@ -10,7 +10,7 @@ extern void quit_proc(int, char**);
 extern void cd_proc(int, char**);
 
 //gettoken.c
-extern int gettoken(char *token, int len, char *buf);
+extern int gettoken(char *token, int len);
 extern char* pr_ttype(int ttype);
 struct command_table cmd_tbl[] = {
 	{"exit", quit_proc},
@@ -45,52 +45,40 @@ int main()
 
 		FILE *fp = stdin;
 
-
-		if (fgets(buf, MAXCHAR-1, fp) == NULL) {
-
-			if (ferror(fp)) {
-				fprintf(stderr, "input error in fgets()\n");
-				return -1;
-			} else
-				return 0;
-		}
-
-		buf[strlen(buf)-1] = '\0';
-		if (strlen(buf) == 0) {
+		char c;
+		if ((c = getchar()) == '\n') {
 			for (i = 0; i < MAX_ARGC; i++) {
 				my_argv[i] = (char *)malloc(sizeof(char) * MAX_ARGV);
 				free(my_argv[i]);
 				my_argv[i] = (char *)malloc(sizeof(char) * MAX_ARGV);
 			}
 
-
 			continue;
 		}
-
-		getargs(&my_argc, my_argv, buf);
+		ungetc(c, stdin);
 
 		int dirflg = 0;
 		//classify the types
-		char token[TOKENLEN];
+		char token[MAX_ARGV][TOKENLEN];
 		int ttype[TOKENNUM];
 		memset(ttype, -1, TOKENNUM);
-		for (i = 0; i < my_argc; i++) {
 
-			if (my_argv[i] == NULL) {
-				//finish
-				ttype[i] = gettoken(token, TOKENLEN, "\n");
+		i = 0;
+		while(1) {
+			ttype[i] = gettoken(token[i], TOKENLEN);
+			// fprintf(stderr, "token[%d]:%s\n", i, token[i]);
+			strcpy(my_argv[i], token[i]);
+			if (ttype[i] == TKN_REDIR_IN || ttype[i] == TKN_REDIR_OUT || ttype[i] == TKN_REDIR_APPEND)
+				dirflg = 1;
+			if (ttype[i] == TKN_EOL || ttype[i] == TKN_EOF) {
+				my_argv[i] = NULL;
+				my_argc = i;
 				break;
 			}
-
-			ttype[i] = gettoken(token, TOKENLEN, my_argv[i]);
-			if (ttype[i] == TKN_REDIR_IN || ttype[i] == TKN_REDIR_OUT || ttype[i] == TKN_REDIR_APPEND) {
-				dirflg = 1;
-
-			}
-
+			i++;
 		}
 
-
+	//	if (ttype[i] != TKN_EOL) break;
 
 		// if cd or quit, don't conduct execvp.
 		int flg = 0;
@@ -119,7 +107,7 @@ int main()
 		int pipe_locate[10], pipe_count = 0;
 		pipe_locate[0] = -1;
 		for (i = 0; i < my_argc;i++) {
-			if (strcmp(my_argv[i], "|") == 0) {
+			if (ttype[i] == TKN_PIPE) {
 				pipe_count++;
 				pipe_locate[pipe_count] = i;
 				my_argv[i] = NULL;
@@ -153,7 +141,7 @@ int main()
 										fd = open(my_argv[j+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
 									if (ttype[j] == TKN_REDIR_APPEND)
 										fd = open(my_argv[j+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
-									// 
+									//
 									// fprintf(stderr, "open:%s\nto:%s\n argv[%d]\n", my_argv[j+1], my_argv[pipe_locate[i]+1],j);
 									// fprintf(stderr, "i:%d\n", i);
 

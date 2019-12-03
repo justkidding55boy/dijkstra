@@ -19,6 +19,8 @@ struct tkntype {
 	{0,                  NULL}
 };
 
+
+
 char *pr_ttype(int);
 
 int gettoken(char *token, int len)
@@ -28,6 +30,8 @@ int gettoken(char *token, int len)
 
     *p = '\0';
     while(isblank(c = getchar()));
+
+
 
     // if special character, return the corresponding type
     switch(c) {
@@ -47,15 +51,14 @@ int gettoken(char *token, int len)
             if ((c = getchar()) == '>')
                 return TKN_REDIR_APPEND;
             ungetc(c, stdin);
-            return TKN_REDIR_OUT;
+	            return TKN_REDIR_OUT;
         default:
             break;
-	}
+	} 
 
     // nomal caracter is input
 
     ungetc(c, stdin);
-
     for (i = 0; i < len - 1; i++) {
         c = getchar();
         if (c != EOF && c != '\n' && c != '&' && c != '<' && c != '>' && c != '|' && !isblank(c))
@@ -71,7 +74,7 @@ int gettoken(char *token, int len)
 }
 
 
-/*
+
 int main()
 {
     char token[TOKENLEN];
@@ -79,12 +82,12 @@ int main()
 
     for (;;) {
         fprintf(stderr, "input: ");
-		char buf[MAXCHAR];
-		fgets(buf, MAXCHAR-1, stdin);
+	//	char buf[MAXCHAR];
+	//	fgets(buf, MAXCHAR-1, stdin);
         while (1) {
-			ttype = gettoken(token, TOKENLEN, "\n");
+			ttype = gettoken(token, TOKENLEN);
 			printf("%s", pr_ttype(ttype));
-
+	
 			if (ttype == TKN_EOL || ttype == TKN_EOF) {
 				break;
 			}
@@ -98,7 +101,7 @@ int main()
     }
 	putchar('\n');
 	return 0;
-}*/
+}
 
 
 char *pr_ttype(int ttype)
