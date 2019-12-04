@@ -35,16 +35,18 @@ void getargs(int *argc, char *argv[], char *buf)
 		if ('!'<= c && c <= '~') {
 			argv[*argc][charcnt++] = c;
 			prev = 0;
-		} else if (prev != 1 && (c == ' ' || c == '\t' || c ==  '\n')) {
+		} else if (prev != 1 && (c == ' ' || c == '\t' || c ==  '\n' || c == '\0')) {
 			prev = 1;
 			argv[*argc][charcnt] = '\0';
 			charcnt = 0;
 			*argc += 1;
-		} 		
-	} while (c !=  '\n');
+		} 	
+	} while (c !=  '\n' && c!= '\0');
 
-	
-	argv[*argc][charcnt] = '\0';
+
+	//argv[*argc][charcnt] = '\0';
+
+	argv[*argc] = NULL;
 
 	/*
     printf("inputed:%d\n", *argc);
@@ -56,6 +58,7 @@ void getargs(int *argc, char *argv[], char *buf)
 }
 
 
+/*
 int main()
 {
     
@@ -92,4 +95,4 @@ int main()
 
     return 0;
 }
-
+*/
