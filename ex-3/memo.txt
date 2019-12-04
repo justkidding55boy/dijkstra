@@ -1,1 +1,1 @@
-myshとは違うPGIDを設定する
+Ctrl DでのEOFに対応する

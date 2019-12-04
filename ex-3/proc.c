@@ -2,10 +2,12 @@
 #include <sys/param.h>
 void quit_proc(int, char**);
 void cd_proc(int, char**);
+extern void fg_proc();
 struct command_table cmd_tbl[] = {
 	{"exit", quit_proc},
 	{"quit", quit_proc},
 	{"cd", cd_proc},
+	{"fg", fg_proc},
 	{NULL, NULL}
 };
 void quit_proc(int argc, char **argv)
@@ -55,3 +57,5 @@ int proc_check(int argc, char **argv)
 	return flg;
 
 }
+
+
