@@ -15,6 +15,7 @@
 #define MAX_ARGC 16
 #define MAX_ARGV 256
 #define MAX_BUF 256
+#define MAXPATH 20
 #define MAXCHAR 256
 struct command_table {
 	char *cmd;
