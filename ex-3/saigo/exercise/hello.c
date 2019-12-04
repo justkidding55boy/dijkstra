@@ -1,8 +1,6 @@
 #include <stdio.h>
-#include <unistd.h>
-
 int main()
 {
-	sleep(6);
+	printf("Hello\n");
 	return 0;
 }

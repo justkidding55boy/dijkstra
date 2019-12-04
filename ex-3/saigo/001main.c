@@ -14,9 +14,6 @@ extern char* pr_ttype(int ttype);
 int killflg = 0;
 int cpid = 0;
 int pipe_locate[10], pipe_count = 0;
-
-//ls.c
-extern int myexecve(char *, char *[], char*ep[]);
 void abrt_handler(int flg, siginfo_t *info, void *ctx)
 {
 	// printf("si_signo:%d\nsi_code:%d\n", info->si_signo, info->si_code);
@@ -46,7 +43,7 @@ void tstp_handler(int flg, siginfo_t *info, void *ctx)
 {
 	if (cpid != 0) {
 		//また再開できるように保存しておく
-
+		fprintf(stderr, "stop %d\n", cpid);
 		tstp_cpid[tstp_cnt++] = cpid;
 		killpg(cpid, SIGTSTP);
 	} else if (cpid == 0) {
@@ -58,12 +55,12 @@ void fg_proc()
 {
 	if (tstp_cnt > 0) {
 		cpid = tstp_cpid[--tstp_cnt];
-
+		fprintf(stderr, "before process id: %d\n", getpid());
 
 		killpg(tstp_cpid[tstp_cnt], SIGCONT);
 		int s;
 		waitpid(tstp_cpid[tstp_cnt], &s, 0);
-
+		fprintf(stderr, "current process id: %d\n", getpid());
 	} else {
 		fprintf(stderr, "no stopped processes\n");
 	}
@@ -72,7 +69,8 @@ int bg_pid[10];
 int bg_pid_cnt = 0;
 
 
-int main(int argc, char **argv, char *envp[])
+
+int main()
 {
 
 	// sigset_t newset;
@@ -96,8 +94,7 @@ int main(int argc, char **argv, char *envp[])
 	int bg_done_flg;
 	while (1) {
 
-		int my_argc, stat;
-		//int pid;
+		int my_argc, stat, pid;
 		char **my_argv;
 
 		//initialization
@@ -241,12 +238,8 @@ int main(int argc, char **argv, char *envp[])
 									int fd;
 									if (ttype[j] == TKN_REDIR_OUT)
 										fd = open(my_argv[j+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
-									if (ttype[j] == TKN_REDIR_APPEND) {
-										fd = open(my_argv[j+1], O_WRONLY|O_APPEND|O_CREAT, 0644);
-										// fprintf(stderr, "APPEND\n");
-									}
-
-
+									if (ttype[j] == TKN_REDIR_APPEND)
+										fd = open(my_argv[j+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
 									//
 									// fprintf(stderr, "open:%s\nto:%s\n argv[%d]\n", my_argv[j+1], my_argv[pipe_locate[i]+1],j);
 									// fprintf(stderr, "i:%d\n", i);
@@ -279,11 +272,7 @@ int main(int argc, char **argv, char *envp[])
 					}
 
 					// fprintf(stderr, "execvp:%s\n", my_argv[pipe_locate[i]+1]);
-					if (myexecve(my_argv[pipe_locate[i] + 1], my_argv +pipe_locate[i] + 1, envp) < 0) {
-						fprintf(stderr, "improper input\n");
-						exit(1);
-					}
-
+					execvp(my_argv[pipe_locate[i] + 1], my_argv +pipe_locate[i] + 1);
 					struct sigaction sa_sigabrt;
 					memset(&sa_sigabrt, 0, sizeof sa_sigabrt);
 					sa_sigabrt.sa_sigaction = abrt_handler;
@@ -298,6 +287,7 @@ int main(int argc, char **argv, char *envp[])
 					bg_done_flg = 0;
 					if (bgflg == 1) {
 						bg_pid[bg_pid_cnt++] = pid;
+						fprintf(stderr, "parent pgid: %d\n", parent_pgid);
 						tcsetpgrp(STDOUT_FILENO, parent_pgid);
 						tcsetpgrp(STDIN_FILENO, parent_pgid);
 						bg_done_flg = 1;
@@ -330,6 +320,7 @@ int main(int argc, char **argv, char *envp[])
 			int a = pid;
 			a = a - pipe_count;
 			for (i = 0; i < pipe_count + 1 && pipe_count != 0; i++) {
+				fprintf(stderr, "cpid + %d = %d\n", i, a + i);
 				waitpid(a + i, &status, 0);
 			}
 
@@ -362,7 +353,7 @@ int main(int argc, char **argv, char *envp[])
 							if (ttype[i] == TKN_REDIR_OUT)
 								fd = open(my_argv[i+1], O_WRONLY|O_CREAT|O_TRUNC, 0644);
 							if (ttype[i] == TKN_REDIR_APPEND)
-								fd = open(my_argv[i+1], O_WRONLY|O_APPEND|O_CREAT, 0644);
+								fd = open(my_argv[i+1], O_WRONLY|O_APPEND|O_CREAT|O_TRUNC, 0644);
 
 							if (fd < 0) {
 								perror("open");
@@ -396,12 +387,10 @@ int main(int argc, char **argv, char *envp[])
 //				if ((pipe_count == 0)&&(dirflg == 0)) {
 
 
-					if (myexecve(my_argv[0], my_argv, envp) < 0) {
-						fprintf(stderr, "mysh: command not found: %s\n", my_argv[0]);
+					if (execvp(my_argv[0], my_argv) < 0) {
+						perror("execvp");
 						exit(1);
 					}
-
-
 
 					// exit(0);
 //				}
@@ -431,6 +420,7 @@ int main(int argc, char **argv, char *envp[])
 				bg_done_flg = 0;
 
 				if (bgflg == 1) {
+					fprintf(stderr, "parent pgid: %d\n", parent_pgid);
 					tcsetpgrp(STDOUT_FILENO, parent_pgid);
 					tcsetpgrp(STDIN_FILENO, parent_pgid);
 					bg_done_flg = 1;
