@@ -11,10 +11,44 @@ extern int proc_check(int, char**);
 //gettoken.c
 extern int gettoken(char *token, int len);
 extern char* pr_ttype(int ttype);
+int killflg = 0;
+int cpid = 0;
+void abrt_handler(int flg, siginfo_t *info, void *ctx)
+{
+	// printf("si_signo:%d\nsi_code:%d\n", info->si_signo, info->si_code);
+	// printf("si_pid:%d\nsi_uid:%d\n", (int)info->si_pid, (int)info->si_uid);
+	// fprintf(stderr, "abrd_handler\n");
+	int pgrp;
+	if ((pgrp = getpgrp()) < 0) {
+		perror("getprep");
+		exit(1);
+	}
+	// fprintf(stderr, "cpid:%d\n", cpid);
+	killflg = 1;
+	if (cpid != 0) {
+		killpg(cpid, SIGKILL);
+		int s;
+		waitpid(cpid, &s, 0);
+	} else if (cpid == 0) {
+		return ;
+	}
 
+}
 
 int main()
 {
+	// sigset_t newset;
+	// sigemptyset(&newset);
+	// sigaddset(&newset, SIGINT);
+	// sigprocmask(SIG_BLOCK, &newset, NULL);
+	struct sigaction sa_sigabrt;
+	memset(&sa_sigabrt, 0, sizeof sa_sigabrt);
+	sa_sigabrt.sa_sigaction = abrt_handler;
+	sa_sigabrt.sa_flags = SA_NOCLDWAIT;
+	if (sigaction(SIGINT, &sa_sigabrt, NULL) < 0) {
+		perror("sigaction");
+		exit(1);
+	}
 
 	while (1) {
 
@@ -34,11 +68,6 @@ int main()
 			return -1;
 		fprintf(stderr, "%s:", path);
 
-		char buf[MAXCHAR] = {'\0'};
-
-
-		FILE *fp = stdin;
-
 		char c;
 		if ((c = getchar()) == '\n') {
 			for (i = 0; i < MAX_ARGC; i++) {
@@ -48,8 +77,9 @@ int main()
 			}
 
 			continue;
+		} else {
+			ungetc(c, stdin);
 		}
-		ungetc(c, stdin);
 
 		int dirflg = 0;
 		//classify the types
@@ -61,6 +91,8 @@ int main()
 		while(1) {
 			ttype[i] = gettoken(token[i], TOKENLEN);
 			// fprintf(stderr, "token[%d]:%s\n", i, token[i]);
+			// fprintf(stderr, "ttype[%d]:%s\n", i, pr_ttype(ttype[i]));
+
 			strcpy(my_argv[i], token[i]);
 			if (ttype[i] == TKN_REDIR_IN || ttype[i] == TKN_REDIR_OUT || ttype[i] == TKN_REDIR_APPEND)
 				dirflg = 1;
@@ -72,7 +104,11 @@ int main()
 			i++;
 		}
 
-	//	if (ttype[i] != TKN_EOL) break;
+		if (ttype[0] == TKN_EOF || ttype[0] == TKN_EOL) {
+			continue;
+		}
+
+
 
 		// if cd or quit, don't conduct execvp.
 		if (proc_check(my_argc, my_argv) == 1) {
@@ -95,12 +131,23 @@ int main()
 		}
 		if (pipe_count > 0) {
 			int pfd[9][2];
+			int pgid = 0;
+
 			for (i = 0; i < pipe_count+1 && pipe_count != 0; i++) {
 				flg = 1;
 				if (i != pipe_count) pipe(pfd[i]);
-				if (fork() == 0) {
+				int pid;
+				if ((pid = fork()) == 0) {
 					//child process
+
 					if (i == 0) {
+						pgid = getpid();
+						cpid = pid;
+						if (setpgid(pgid, pgid) < 0) {
+							perror("setpgid");
+							exit(1);
+						}
+
 						// to the stdout
 						dup2(pfd[i][1], 1);
 						//close the stdin and stdout
@@ -126,6 +173,11 @@ int main()
 						}
 
 					} else if (i == pipe_count) {
+						pgid = getpid() - i;
+						if (setpgid(getpid(), pgid) < 0) {
+							perror("setpgid");
+							exit(1);
+						}
 						//to the stdin
 						dup2(pfd[i-1][0], 0);
 						close(pfd[i-1][0]); close(pfd[i-1][1]);
@@ -156,16 +208,15 @@ int main()
 								}
 
 							}
-							/*
-							for (j = 0; j < MAX_ARGC; j++) {
-								my_argv[j] = (char *)malloc(sizeof(char) * MAX_ARGV);
-								free(my_argv[i]);
-								my_argv[j] = (char *)malloc(sizeof(char) * MAX_ARGV);
-							}*/
-
 						}
 
 					} else {
+						pgid = getpid() - i;
+
+						if (setpgid(getpid(), pgid) < 0) {
+							perror("setpgid");
+							exit(1);
+						}
 						dup2(pfd[i-1][0], 0);
 						dup2(pfd[i][1], 1);
 						close(pfd[i-1][0]); close(pfd[i-1][1]);
@@ -174,7 +225,15 @@ int main()
 
 					// fprintf(stderr, "execvp:%s\n", my_argv[pipe_locate[i]+1]);
 					execvp(my_argv[pipe_locate[i] + 1], my_argv +pipe_locate[i] + 1);
-					exit(0);
+					struct sigaction sa_sigabrt;
+					memset(&sa_sigabrt, 0, sizeof sa_sigabrt);
+					sa_sigabrt.sa_sigaction = abrt_handler;
+					sa_sigabrt.sa_flags = SA_NOCLDWAIT;
+					if (sigaction(SIGINT, &sa_sigabrt, NULL) < 0) {
+						exit(1);
+					}
+					// exit(0);
+
 				} //以下 parents
 				 else if (i > 0) {
 					close(pfd[i-1][0]); close(pfd[i-1][1]);
@@ -186,6 +245,7 @@ int main()
 
 			for (i = 0; i < pipe_count + 1 && pipe_count != 0; i++) {
 				wait(&status);
+				// waitpid(pid, &status, 0);
 			}
 
 		}
@@ -194,12 +254,16 @@ int main()
 
 
 			// if pipe_cnt == 0 and dirflg == 1
-			if ((pid = fork()) < 0) {
+			if ((cpid = fork()) < 0) {
 				perror("fork");
 				exit(1);
 			}
 
-			if (pid == 0) {
+			if (cpid == 0) {
+				if (setpgid(getpid(), getpid()) < 0) {
+					perror("setpgid");
+					exit(1);
+				}
 				// child process
 				if (dirflg == 1) {
 					for (i = 0; i < my_argc; i++) {
@@ -244,20 +308,38 @@ int main()
 
 				//fprintf(stderr, "pipe_cnt: %d, dirflg: %d\n", pipe_count, dirflg);
 //				if ((pipe_count == 0)&&(dirflg == 0)) {
+
+
 					if (execvp(my_argv[0], my_argv) < 0) {
 						perror("execvp");
 						exit(1);
 					}
+
+					// exit(0);
 //				}
 			} else {
 				// parent process
 				// pid: process ID
 				/*
 				fprintf(stderr, "\t** parent: wait for child(%d) **\n", pid);*/
-				if (wait(&stat) < 0) {
-					perror("wait");
-					exit(1);
+				// fprintf(stderr, "parent:%d\n", getpid());
+
+				struct sigaction sa_sigabrt;
+				memset(&sa_sigabrt, 0, sizeof sa_sigabrt);
+				sa_sigabrt.sa_sigaction = abrt_handler;
+				sa_sigabrt.sa_flags = SA_NOCLDWAIT;
+
+				sigaction(SIGINT, &sa_sigabrt, NULL);
+
+				if (waitpid(cpid, &stat, 0) < 0) {
+
+					 perror("wait");
+
+					 // exit(1);
 				}
+				// if (wait(&stat) < 0) {
+				// 	perror("wait");
+				// }
 				//stat: stat from child process
 				/*fprintf(stderr, "\t** parent: wait end. stat: %d **\n", stat);*/
 				for (i = 0; i < MAX_ARGC; i++) {

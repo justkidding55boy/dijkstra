@@ -131,9 +131,8 @@ char *pr_ttype(int ttype)
 		case TKN_NONE:
 			return "NONE";
 			break;
-
 		default:
-			return "";
+			return "DEFAULT";
 			break;
 	}
 }

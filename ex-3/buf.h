@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #define MAXARG 80
 #define BUFSIZE 1024
 #define ENDWORD "exit"
