@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[])
 {
-    char *newargv[] = { "/Users/eijikudo/program/unix/ex-3/exercise/./hello", NULL };
+    char *newargv[] = { "/Users/eijikudo/program/unix/ex-3/exercise/hello", NULL };
     char *newenviron[] = { NULL };
 
 	/*
@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }*/
 
-    newargv[0] = argv[1];
+
 	
 
     execve(newargv[0], newargv, newenviron);

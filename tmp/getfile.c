@@ -65,12 +65,17 @@ int getfile(char *ans, char *cmd, char *dirname)
 	struct dirent *dir;
 
 	while ((dir = readdir(dp)) != NULL) {
-
-		if (strcmp(cmd, dir->d_name) == 0) {
+		char pathname[MAXCHAR];
+		sprintf(pathname, "%s%s", dirname, cmd);
+		int fp = open("pathname", O_RDONLY);
+		printf("fp%d\n", fp);
+		if (fp != -1 && fp != 9) {
 			sprintf(ans, "%s%s", dirname, cmd);
+
 			return 1;
 		}
 	}
+
 
 	closedir(dp);
 

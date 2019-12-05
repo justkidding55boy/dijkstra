@@ -13,7 +13,7 @@ extern int gettoken(char *token, int len);
 extern char* pr_ttype(int ttype);
 int killflg = 0;
 int cpid = 0;
-int pipe_find[10], pipe_cnt = 0;
+int pipe_locate[10], pipe_count = 0;
 
 //ls.c
 extern int myexecve(char *, char *[], char*ep[]);
@@ -26,7 +26,7 @@ void abrt_handler(int flg, siginfo_t *info, void *ctx)
 	killflg = 1;
 	if (cpid != 0) {
 
-		int attempt = pipe_cnt > 0 ? pipe_cnt : 1;
+		int attempt = pipe_count > 0 ? pipe_count : 1;
 		int i;
 		for (i = 0; i < attempt; i++) {
 			killpg(cpid + i, SIGKILL);
@@ -53,11 +53,6 @@ void tstp_handler(int flg, siginfo_t *info, void *ctx)
 		return ;
 	}
 }
-int ttou = 0;
-void ttou_handler(int flg, siginfo_t *info, void *ctx)
-{
-	fprintf(stderr, "done:%d\n", ttou);
-}
 
 void fg_proc()
 {
@@ -73,7 +68,6 @@ void fg_proc()
 		fprintf(stderr, "no stopped processes\n");
 	}
 }
-
 int bg_pid[10];
 int bg_pid_cnt = 0;
 
@@ -96,12 +90,6 @@ int main(int argc, char **argv, char *envp[])
 	}
 	sa_sigabrt.sa_sigaction = tstp_handler;
 	if (sigaction(SIGTSTP, &sa_sigabrt, NULL) < 0) {
-		perror("sigaction");
-		exit(1);
-	}
-
-	sa_sigabrt.sa_sigaction = ttou_handler;
-	if (sigaction(SIGTTOU, &sa_sigabrt, NULL) < 0) {
 		perror("sigaction");
 		exit(1);
 	}
@@ -183,22 +171,22 @@ int main(int argc, char **argv, char *envp[])
         if (strcmp(my_argv[0], ENDWORD) == 0)
             return 0;
 
-		pipe_cnt = 0;
-		pipe_find[0] = -1;
+		pipe_count = 0;
+		pipe_locate[0] = -1;
 		for (i = 0; i < my_argc;i++) {
 			if (ttype[i] == TKN_PIPE) {
-				pipe_cnt++;
-				pipe_find[pipe_cnt] = i;
+				pipe_count++;
+				pipe_locate[pipe_count] = i;
 				my_argv[i] = NULL;
 			}
 		}
-		if (pipe_cnt > 0) {
+		if (pipe_count > 0) {
 			int pfd[9][2];
 			int pgid = 0;
 			int pid;
-			for (i = 0; i < pipe_cnt+1 && pipe_cnt != 0; i++) {
+			for (i = 0; i < pipe_count+1 && pipe_count != 0; i++) {
 				flg = 1;
-				if (i != pipe_cnt) pipe(pfd[i]);
+				if (i != pipe_count) pipe(pfd[i]);
 				pid = fork();
 				if (pid == 0) {
 					//child process
@@ -212,12 +200,7 @@ int main(int argc, char **argv, char *envp[])
 						}
 
 						// to the stdout
-						if (dup2(pfd[i][1], 1) < 0) {
-							perror("dup2");
-							exit(1);
-						}
-
-
+						dup2(pfd[i][1], 1);
 						//close the stdin and stdout
 						close(pfd[i][0]);
 						close(pfd[i][1]);
@@ -240,17 +223,14 @@ int main(int argc, char **argv, char *envp[])
 							}
 						}
 
-					} else if (i == pipe_cnt) {
+					} else if (i == pipe_count) {
 						pgid = getpid() - i;
 						if (setpgid(getpid(), pgid) < 0) {
 							perror("setpgid");
 							exit(1);
 						}
 						//to the stdin
-						if (dup2(pfd[i-1][0], 0) < 0) {
-							perror("dup2");
-							exit(1);
-						}
+						dup2(pfd[i-1][0], 0);
 						close(pfd[i-1][0]); close(pfd[i-1][1]);
 						if (dirflg == 1) {
 							int j;
@@ -268,7 +248,7 @@ int main(int argc, char **argv, char *envp[])
 
 
 									//
-									// fprintf(stderr, "open:%s\nto:%s\n argv[%d]\n", my_argv[j+1], my_argv[pipe_find[i]+1],j);
+									// fprintf(stderr, "open:%s\nto:%s\n argv[%d]\n", my_argv[j+1], my_argv[pipe_locate[i]+1],j);
 									// fprintf(stderr, "i:%d\n", i);
 
 									if (fd < 0) {
@@ -276,10 +256,7 @@ int main(int argc, char **argv, char *envp[])
 										exit(1);
 									}
 
-									if (dup2(fd, 1) < 0) {
-										perror("dup2");
-										exit(1);
-									}
+									dup2(fd, 1);
 									close(fd);
 									my_argv[j] = NULL;
 
@@ -295,19 +272,14 @@ int main(int argc, char **argv, char *envp[])
 							perror("setpgid");
 							exit(1);
 						}
-						if (dup2(pfd[i-1][0], 0) < 0) {
-							perror("dup2");
-							exit(1);
-						}
-						if (dup2(pfd[i][1], 1) < 0) {
-							perror("dup2");
-						}
+						dup2(pfd[i-1][0], 0);
+						dup2(pfd[i][1], 1);
 						close(pfd[i-1][0]); close(pfd[i-1][1]);
 						close(pfd[i][0]); close(pfd[i][1]);
 					}
 
-					// fprintf(stderr, "execvp:%s\n", my_argv[pipe_find[i]+1]);
-					if (myexecve(my_argv[pipe_find[i] + 1], my_argv +pipe_find[i] + 1, envp) < 0) {
+					// fprintf(stderr, "execvp:%s\n", my_argv[pipe_locate[i]+1]);
+					if (myexecve(my_argv[pipe_locate[i] + 1], my_argv +pipe_locate[i] + 1, envp) < 0) {
 						fprintf(stderr, "improper input\n");
 						exit(1);
 					}
@@ -342,10 +314,10 @@ int main(int argc, char **argv, char *envp[])
 
 				   } else if (i == 0) {
 
-					   // bg_done_flg = 0;
-					   // if (bgflg == 1) {
-						//    bg_pid[bg_pid_cnt++] = pid;
-					   // }
+					   bg_done_flg = 0;
+					   if (bgflg == 1) {
+						   bg_pid[bg_pid_cnt++] = pid;
+					   }
 				   }
 				}
 
@@ -356,15 +328,15 @@ int main(int argc, char **argv, char *envp[])
 			int status;
 
 			int a = pid;
-			a = a - pipe_cnt;
-			for (i = 0; i < pipe_cnt + 1 && pipe_cnt != 0; i++) {
+			a = a - pipe_count;
+			for (i = 0; i < pipe_count + 1 && pipe_count != 0; i++) {
 				waitpid(a + i, &status, 0);
 			}
 
 
 		}
 
-		if (pipe_cnt == 0) {
+		if (pipe_count == 0) {
 
 			// if pipe_cnt == 0 and dirflg == 1
 			if ((cpid = fork()) < 0) {
@@ -397,10 +369,7 @@ int main(int argc, char **argv, char *envp[])
 								exit(1);
 							}
 							close(1);
-							if (dup(fd) < 0) {
-								perror("dup");
-								exit(1);
-							}
+							dup(fd);
 							close(fd);
 							my_argv[i] = NULL;
 
@@ -414,11 +383,7 @@ int main(int argc, char **argv, char *envp[])
 								exit(1);
 							}
 							close(0);
-							if (dup(fd) < 0) {
-								perror("dup");
-								exit(1);
-							}
-
+							dup(fd);
 							close(fd);
 							my_argv[i] = NULL;
 						}
@@ -427,8 +392,8 @@ int main(int argc, char **argv, char *envp[])
 				}
 
 
-				//fprintf(stderr, "pipe_cnt: %d, dirflg: %d\n", pipe_cnt, dirflg);
-//				if ((pipe_cnt == 0)&&(dirflg == 0)) {
+				//fprintf(stderr, "pipe_cnt: %d, dirflg: %d\n", pipe_count, dirflg);
+//				if ((pipe_count == 0)&&(dirflg == 0)) {
 
 
 					if (myexecve(my_argv[0], my_argv, envp) < 0) {

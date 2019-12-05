@@ -9,15 +9,15 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/dir.h>
-#include <pwd.h>
+#include <pwd.h>     
 #include <grp.h>
 #include <uuid/uuid.h>
 #include <time.h>
 
 #define MAXCHAR 256
-void permission(struct stat fileStat, char *buf);
+void permission(struct stat fileStat, char *buf); 
 char *month(int num);
-void myls(char *ans, int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	DIR *dp;
 	char dirname[MAXCHAR] = ".";
@@ -39,12 +39,12 @@ void myls(char *ans, int argc, char *argv[])
 			memset(pms, 0, MAXCHAR);
 			permission(sb, pms);
 			struct passwd *pws = getpwuid(sb.st_uid);
-			struct group *gpws = getgrgid(sb.st_gid);
+			struct group *gpws = getgrgid(sb.st_gid); 
 			struct tm *tmp = localtime(&sb.st_mtime);
-			sprintf(ans, "%s %2d %s  %s %6d ", pms, sb.st_nlink, pws->pw_name, gpws->gr_name, (int)sb.st_size);
-
-			sprintf(ans, "%s %2d %2d:%2d ", month(tmp->tm_mon), tmp->tm_mday, tmp->tm_hour, tmp->tm_min);
-			sprintf(ans, "%s ", dir->d_name);
+			printf("%s %2d %s  %s %6d ", pms, sb.st_nlink, pws->pw_name, gpws->gr_name, (int)sb.st_size);
+		
+			printf("%s %2d %2d:%2d ", month(tmp->tm_mon), tmp->tm_mday, tmp->tm_hour, tmp->tm_min);
+			printf("%s ", dir->d_name);
 
 			printf("\n");
 			free(pms);
@@ -53,33 +53,11 @@ void myls(char *ans, int argc, char *argv[])
 	}
 
 	closedir(dp);
-
+	
+	return 0;
 }
 
-int getfile(char *ans, char *cmd, char *dirname)
-{
-	DIR *dp;
-
-	dp = opendir(dirname);
-
-	struct dirent *dir;
-
-	while ((dir = readdir(dp)) != NULL) {
-
-		if (strcmp(cmd, dir->d_name) == 0) {
-			sprintf(ans, "%s%s", dirname, cmd);
-			return 1;
-		}
-	}
-
-	closedir(dp);
-
-	return -1;
-
-}
-
-
-void permission(struct stat fileStat, char *buf)
+void permission(struct stat fileStat, char *buf) 
 {
 	int i = 0;
     buf[i++] =  (S_ISDIR(fileStat.st_mode)) ? 'd' : '-';
@@ -121,7 +99,7 @@ char *month(int num)
 		case 11:
 			return "Nov";
 		case 12:
-			return "Dec";
+			return "Dec";	
 		default:
 			return "xxx";
 	}
