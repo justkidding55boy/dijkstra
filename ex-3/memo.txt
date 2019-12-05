@@ -1,0 +1,9 @@
+exercise以下にmyls, mycp, mycatを実装しました
+
+Ctrl + Zを押した後にfgを押すと再開します
+
+./helloのようなファイルも実行できます
+hello.cを置いておきましたので
+gcc hello.c -o hello
+./hello
+をお楽しみください
