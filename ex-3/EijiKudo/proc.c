@@ -3,6 +3,7 @@
 void quit_proc(int, char**);
 void cd_proc(int, char**);
 extern void fg_proc();
+extern void bg_proc();
 struct command_table cmd_tbl[] = {
 	{"exit", quit_proc},
 	{"quit", quit_proc},

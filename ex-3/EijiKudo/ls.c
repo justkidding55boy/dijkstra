@@ -65,13 +65,20 @@ int myexecve(char *file, char *argv[], char *ep[])
 	} 
 
 
+
 	if (strncmp(file, "./", 2) == 0) {
 		if ((t = findPWD(ep)) < 0) {
 			return -1;
 		}
-		strncpy(path[pl++],ep[t] + 4, MAX_BUF-1);
-		execvp(file, argv);
-		return 1;
+//		strncpy(path[pl++],ep[t] + 4, MAX_BUF-1);
+		getwd(path[pl++]);
+
+/*		execvp(file, argv);
+		return 1;*/
+		char tmp[MAX_BUF];
+		strcpy(tmp, file+2);
+		strcpy(file, tmp);
+
 	} 
 
 	char *files;
@@ -86,9 +93,8 @@ int myexecve(char *file, char *argv[], char *ep[])
 		ans = malloc(sizeof (char) * MAXCHAR);
 		memset(ans, 0, MAXCHAR);
 		if (getfile(ans, file, pt) > 0) {
-		//	printf("files:%s\n", files);
-			eflg = 0;
 
+			eflg = 0;
 			if (execve(ans, argv, ep) < 0 ) {
 				perror("execve");
 				return -1;

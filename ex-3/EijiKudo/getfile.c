@@ -72,7 +72,6 @@ int getfile(char *ans, char *cmd, char *dirname)
 		}
 	}
 
-
 	closedir(dp);
 
 	return -1;

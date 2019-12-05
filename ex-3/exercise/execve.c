@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[])
 {
-    char *newargv[] = { NULL, "hello", "world", NULL };
+    char *newargv[] = { "/Users/eijikudo/program/unix/ex-3/exercise/hello", NULL };
     char *newenviron[] = { NULL };
 
 	/*
@@ -13,12 +13,12 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }*/
 
-    newargv[0] = argv[1];
+
 	
-	printf("execve\n");
-    //execve(argv[1], newargv, newenviron);
-    execvp("ls", newargv);
-	printf("execvp\n");
+
+    execve(newargv[0], newargv, newenviron);
+    //execvp("ls", newargv);
+
     //perror("execve");   /* execve() returns only on error */
     exit(EXIT_FAILURE);
 }
