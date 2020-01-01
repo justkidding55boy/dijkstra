@@ -1,4 +1,5 @@
 #include <stdlib.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -6,6 +7,7 @@
 #include <stdio.h>
 #include <error.h>
 #include <arpa/inet.h>
+
 #include <string.h>
 
 int main(int argc, char **argv)
