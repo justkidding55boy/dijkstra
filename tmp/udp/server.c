@@ -31,7 +31,7 @@ int main()
 		perror("bind");
 		exit(1);
 	}
-    printf("start\n");
+    printf("hello\n");
 
     sktlen = sizeof skt;
     while (1) {
@@ -40,13 +40,12 @@ int main()
             perror("recvfrom");
             exit(1);
         }
-        fprintf(stderr, "received:%s\n", rbuf);
+        printf("received:%s", rbuf);
         
         if ((count = sendto(s, rbuf, strlen(rbuf), 0, (struct sockaddr *) &skt, sizeof skt)) < 0) {
             perror("sendto");
             exit(1);
         }
-
         
 
     }

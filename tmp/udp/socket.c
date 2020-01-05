@@ -9,20 +9,6 @@
 #include <string.h>
 #define MAXCHAR 256
 
-void discover_proc(int s, struct sockaddr_in myskt)
-{
-    char buf[MAXCHAR];
-    memset(buf, 0, MAXCHAR);
-    sprintf(buf, "DISCOVER");
-
-    if ((sendto(s, buf, strlen(buf), 0, (struct sockaddr *) &myskt, sizeof (myskt))) < 0) {
-        perror("sendto");
-
-        exit(1);
-    }
-
-}
-
 int main(int argc, char **argv)
 {
     int s;
@@ -41,6 +27,8 @@ int main(int argc, char **argv)
     struct in_addr ipaddr;
     inet_aton("127.0.0.1", &ipaddr);
 
+    char buf[MAXCHAR];
+
     int count;
     myskt.sin_family = AF_INET;
     myskt.sin_port = htons(49152);
@@ -48,20 +36,33 @@ int main(int argc, char **argv)
     myskt.sin_addr.s_addr = ipaddr.s_addr;
 
 
-    discover_proc(s, myskt);
-    
+    while (1) {
+        memset(buf, 0, MAXCHAR);
+        fprintf(stderr, "command:");
+        if (fgets(buf, MAXCHAR, stdin) == NULL) {
+            break;
+        }
+        printf("I will send: %s", buf);
+        int datalen = strlen(buf);
 
-    char rbuf[512];
-    memset(rbuf, 0, sizeof rbuf);
+        if ((count = sendto(s, buf, datalen, 0, (struct sockaddr *) &myskt, sizeof myskt)) < 0) {
+            perror("sendto");
 
-    
-    if ((count = recvfrom(s, rbuf, sizeof rbuf, 0, (struct sockaddr * ) &skt, &sktlen)) < 0) {
-        perror("recvfrom");
-        exit(1);
+            exit(1);
+        }
+        printf("%d\n", count);
+
+        char rbuf[512];
+        memset(rbuf, 0, sizeof rbuf);
+
+        
+        if ((count = recvfrom(s, rbuf, sizeof rbuf, 0, (struct sockaddr * ) &skt, &sktlen)) < 0) {
+            perror("recvfrom");
+            exit(1);
+        }
+        printf("received:%s", rbuf);
+
     }
-    printf("received:%s\n", rbuf);
-
-    
     return 0;
 }
 
