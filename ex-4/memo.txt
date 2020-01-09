@@ -1,2 +1,8 @@
 61706613
 Eiji Kudo
+
+make all
+./server addr-config
+./socket IPaddress
+
+で動きます
