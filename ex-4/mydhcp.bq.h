@@ -14,71 +14,76 @@
 
 //new
 
-#define SDISCOVER  1
-#define RDISCOVER 1
-#define SOFFER 2
-#define ROFFER 2
-#define SREQUEST  3
-#define RREQUEST 3
-#define SACK 4
-#define RACK 4
-#define SRELEASE 5
-#define RRELEASE 5
+
 
 
 //server
-#define INIT 6
-#define DISCOVER_WAIT 7
-#define REQUEST_WAIT 8
-#define IP_ALLOC 9
-#define FINISH 10
+#define INIT 1
+#define DISCOVER_WAIT 2
+#define REQUEST_WAIT 3
+#define IP_ALLOC 4
+#define FINISH 5
 
-#define RELEASE 11
-#define NONE 12
-#define IPSTARVE 13
-#define REJECT 14
-#define SSTARVE 15
+#define RDISCOVER 6
+#define ROFFER 7
+#define RREQUEST 8
 
-#define OFFER_WAIT 16
+#define SDISCOVER  9
+#define SOFFER 10
+#define SACK 11
+#define SREQUEST  12
+#define RELEASE 13
+#define NONE 14
+#define IPSTARVE 15
+#define REJECT 16
+#define SSTARVE 17
 
-#define IPGET 17
-#define TIMEHALF 18
-#define RELEASEPREP 19
-#define ACK_WAIT 20
+#define OFFER_WAIT 18
+#define RACK 19
+#define IPGET 20
+#define TIMEHALF 21
+#define RELEASEPREP 22
+#define ACK_WAIT 23
 
-
+#define SRELEASE 24
+#define RRELEASE 25
 
 #define MAXCHAR 512
 #define TIMEOUT 10
 static char *mytypes[MAXCHAR] = 
 {
-    "DISCOVER",
-    "OFFER",
-    "REQUEST",
-    "ACK",
-    "RELEASE",
     "INIT",
     "DISCOVER_WAIT",
     "REQUEST_WAIT",
     "IP_ALLOC",
     "FINISH",
 
+    "RDISCOVER",
+    "ROFFER",
+    "RREQUEST",
+
+    "SDISCOVER",
+    "SOFFER",
+    "SACK",
+    "SREQUEST",
     "RELEASE",
     "NONE",
     "IPSTARVE",
     "REJECT",
     "SSTARVE",
-
     "OFFER_WAIT",
-
+    "RACK",
     "IPGET",
     "TIMEHALF",
     "RELEASEPREP",
     "ACK_WAIT",
+    "SRELEASE",
+    "RRELEASE",
     NULL
 };
 
-struct client {
+struct client
+{
     struct client *fp;
     struct client *bp;
     short status;

@@ -12,7 +12,7 @@ void time_init();
 
 void soffer(), sstarve(), sack();
 void f_act4(), f_act5(), f_act6();
-void release(), count_down();
+void release(), count_down(), terminate();
 
 //proc.c
 extern void print_buf(struct dhcph);
@@ -49,7 +49,8 @@ struct proctable {
     {DISCOVER_WAIT, IPSTARVE, sstarve},
     {REQUEST_WAIT, RREQUEST, sack},
     {IP_ALLOC, RREQUEST, sack},
-    {FINISH, 0, f_act5},
+    {IP_ALLOC, RRELEASE, release},
+    {FINISH, 0, terminate},
     {0, 0, NULL}
 };
 int mycnt = 0;
@@ -77,7 +78,6 @@ int main(int argc, char *argv[])
             //printf("pt->status:%d(%s), p->status: %d(%s)\n", pt->status, mytypes[pt->status-1], p->status, mytypes[p->status-1]); 
             if (pt->event == event && pt->status == p->status) {
                 (*pt->func)();
-
                 break;
             }
         }
@@ -176,13 +176,16 @@ void get_config(char *filename)
 
 }
 
+void terminate(){
 
+}
 
 void sock_init()
 {
     //socketの初期化
 
-    in_port_t myport = 51230;
+    //in_port_t myport = 51230;
+    in_port_t myport = 50002;
 
     if ((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket");
@@ -228,18 +231,21 @@ int wait_event()
     uint8_t loop;
 
     do {    
+        
         signal(SIGALRM, sigh_alrm);
         tv.tv_sec = TIMEOUT;
         tv.tv_usec = 0;
         FD_ZERO(&rdfds);
         FD_SET(s, &rdfds);
+        errno = 0;
         retval = select(s+1, &rdfds, NULL, NULL, &tv);
-        errno = loop = 0;
+        loop = 0;
+        errno = 0;
 
         if (retval == -1) {
 
-
             struct client *t;
+
             for (t = client_list.fp; t != &client_list; t = t->fp) {
                 if (t->status == IP_ALLOC) {
                     t->rttl++;
@@ -249,6 +255,8 @@ int wait_event()
                         t->rttl = 0;
                     }
                 }
+                
+
             }
 
             if (errno == EINTR) {
@@ -279,12 +287,7 @@ int wait_event()
             alrmflag = 0;
             loop = 1;
             continue;
-        } else if (retval == 0) {
-            //select no update
-            printf("errno2:%d\n", errno);
-            printf("retval == 0\n");
-            //時間切れ
-        } else if (retval > 0) {
+        } else if (retval) {
             //更新された記述子の数
             if (FD_ISSET(s, &rdfds)) {
                 memset(&rbuf, 0, sizeof rbuf);
@@ -312,7 +315,12 @@ int wait_event()
                         return IPSTARVE;
                 } 
             }
-        }
+        } else {
+            //select no update
+            printf("errno2:%d\n", errno);
+            printf("retval == 0\n");
+            //時間切れ
+        } 
         printf("loop:%d\n", loop);
 
     } while(loop);
@@ -328,7 +336,7 @@ int check_cli_list(struct sockaddr_in skt)
             if (p->status == DISCOVER_WAIT && rbuf.type == SDISCOVER)  return RDISCOVER;
             if (p->status == REQUEST_WAIT  && rbuf.type == SREQUEST)   return RREQUEST;
             if (p->status == IP_ALLOC      && rbuf.type == SREQUEST)   return RREQUEST;
-            if (p->status == IP_ALLOC      && rbuf.type == RELEASE)    return RELEASE;
+            if (p->status == IP_ALLOC      && rbuf.type == SRELEASE)    return RRELEASE;
             fprintf(stderr, "Illegal message\n");
             continue;  
         }

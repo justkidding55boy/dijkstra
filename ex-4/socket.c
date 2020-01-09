@@ -30,9 +30,25 @@ struct timeval tv;
 //proc.c
 extern void print_buf(struct dhcph);
 
-void srequest(), setip();
-void f_act1()
+void srequest(), setip(), srequest2();
+void srealse()
 {
+   struct dhcph buf;
+   memset(&buf, 0, sizeof buf);
+   buf.type = SRELEASE;
+   buf.address = address;
+
+   fprintf(stderr, "send\n");
+   print_buf(buf);
+
+    if ((sendto(s, &buf, sizeof buf, 0, (struct sockaddr *) &myskt, sizeof (myskt))) < 0) {
+        perror("sendto");
+        exit(1);
+    }
+
+    printf("OK. I will sleep\n");
+    exit(0);
+
 
 }
 
@@ -56,8 +72,8 @@ struct proctable {
 } ptab [] = {
     {OFFER_WAIT, ROFFER, srequest},
     {ACK_WAIT, RACK, setip},
-    {IPGET, TIMEHALF, f_act1},
-    {IPGET, RELEASEPREP, f_act1},
+    {IPGET, TIMEHALF, srequest2},
+    {IPGET, RELEASEPREP, srealse},
     {0, 0, NULL}
 };
 
@@ -73,7 +89,8 @@ void sdiscover()
         perror("sendto");
         exit(1);
     }
-
+    printf("state change: stat(%s) -> stat(%s)\n", mytypes[INIT-1], mytypes[OFFER_WAIT-1]);
+    status = OFFER_WAIT;
 }
 
 void srequest()
@@ -125,6 +142,9 @@ void srequest2()
         perror("sendto");
         exit(1);
     }
+    printf("******state change: stat(%s) -> stat(%s)\n", mytypes[status-1], mytypes[ACK_WAIT-1]);
+    status = ACK_WAIT;
+    
 
 }
 /*
@@ -161,7 +181,8 @@ void sock_init(char *ip)
 
     
     myskt.sin_family = AF_INET;
-    myskt.sin_port = htons(51230);
+    myskt.sin_port = htons(50002);
+    //myskt.sin_port = htons(51231);
 
     myskt.sin_addr.s_addr = ipaddr.s_addr;
 
@@ -194,23 +215,28 @@ int wait_event()
         tv.tv_sec = TIMEOUT;    tv.tv_usec = 0;
         errno = 0;
         retval = select(s+1, &rdfds, NULL, NULL, &tv);
-        printf("retval:%d\n", retval);
-        printf("status:%s\n", mytypes[status-1]);
-
 
         if (retval == -1) {
             //更新無し
+
+            if (hupflag > 0 ) {
+                hupflag = 0;
+                return RELEASEPREP;
+            }
        
             if (status == IPGET) {
                 rttl++;
                 printf("passed time: %ds\n", rttl);
-                printf("ttl: %d\n", ttl);
+     
                 if (rttl >= ttl) {
                     errno = 4;
                     rttl = 0;
                 }
+                if (rttl == ttl/2) {
+                    rttl = 0;
+                    return TIMEHALF;
+                }
             }
-
 
             if (errno == 4) {
                 if (status == RACK && alrmflag > 0) {
@@ -254,8 +280,8 @@ int wait_event()
             if (timeoutflag) exit(0);
             else {
                 timeoutflag++;
-                if (status == OFFER_WAIT) return 0 ;
-                if (status == RACK) return RACK;
+                if (status == OFFER_WAIT)  sdiscover();
+                if (status == ACK_WAIT) srequest();
                 if (status == IPGET) return RELEASEPREP;
                 loop = 1;
                 continue;
@@ -266,6 +292,7 @@ int wait_event()
 }
 int main(int argc, char **argv)
 {
+
     if  (argc != 2) {
         fprintf(stderr, "input ip\n");
         return 0;
@@ -284,7 +311,7 @@ int main(int argc, char **argv)
     while(1) {               
         event = wait_event();
         printf("status:%s\n", mytypes[status-1]);
-
+        printf("status:%d\n", status); 
         for (pt = ptab; pt->status; pt++) {
             if (pt->status == status && pt->event == event) {
 
@@ -292,44 +319,11 @@ int main(int argc, char **argv)
                 break;
             }
         }
+        
         if (pt->status == 0) {
             fprintf(stderr, "処理が定義されていません\n, status: %s, event:  %s\n", mytypes[status-1], mytypes[event-1]);
         }
     }
-    /*
-    int input;
-    while(1) {
-        char *menu[256] = {
-            "sdiscover",
-            "srequest",
-            "srequest2",
-            NULL
-        };
-        int i;
-        for (i = 0; i < 4; i++) {
-            printf("%s: %d\n", menu[i], i);
-        }
-        scanf("%d", &input);
-        switch (input) {
-            case 0:
-                sdiscover();
-                receive_print();
-                 break;
-            case 1:
-                srequest();
-
-                receive_print();
-
-                break;
-            case 2:
-                srequest2();
-                receive_print();
-                break;   
-            default:
-                break;
-        };
-    }
-    */
    
     return 0;
 }

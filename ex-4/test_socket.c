@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 
     
     myskt.sin_family = AF_INET;
-    myskt.sin_port = htons(51230);
+    myskt.sin_port = htons(51231);
 
     myskt.sin_addr.s_addr = ipaddr.s_addr;
 
