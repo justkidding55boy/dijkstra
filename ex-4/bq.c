@@ -4,7 +4,7 @@
 
 //init
 void get_config(char *filename);
-
+void counter_init();
 void sock_init();
 void time_init();
 //init
@@ -176,7 +176,10 @@ void get_config(char *filename)
 
 }
 
-
+void counter_init()
+{
+    //timerの初期化
+}
 
 void sock_init()
 {
@@ -236,55 +239,7 @@ int wait_event()
         retval = select(s+1, &rdfds, NULL, NULL, &tv);
         errno = loop = 0;
 
-        if (retval == -1) {
-
-
-            struct client *t;
-            for (t = client_list.fp; t != &client_list; t = t->fp) {
-                if (t->status == IP_ALLOC) {
-                    t->rttl++;
-                    printf("%s:passed time: %ds\n", inet_ntoa(t->addr), t->rttl);
-                    if (t->rttl >= ttl) {
-                        errno = 4;
-                        t->rttl = 0;
-                    }
-                }
-            }
-
-            if (errno == EINTR) {
-                if (alrmflag == 1) {
-                    for (p = client_list.fp; p !=  &client_list; p = p->fp) { 
-                        if (p->status == IP_ALLOC)  count_down();
-                        if (p->status == REQUEST_WAIT) {
-                            time10+=1;
-                            if (time10 > 10) {
-                                fprintf(stderr, "timeout\n");
-                                if (timeoutflag) exit(1);
-                                else {
-                                    timeoutflag += 1;
-                                    time10 = 0;
-                                    for (p=client_list.fp; p!=&client_list;p=p->fp) {
-                                        if (p->status == REQUEST_WAIT) {
-                                            p->status--; soffer();
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-
-            } 
-            alrmflag = 0;
-            loop = 1;
-            continue;
-        } else if (retval == 0) {
-            //select no update
-            printf("errno2:%d\n", errno);
-            printf("retval == 0\n");
-            //時間切れ
-        } else if (retval > 0) {
+        if (retval > 0) {
             //更新された記述子の数
             if (FD_ISSET(s, &rdfds)) {
                 memset(&rbuf, 0, sizeof rbuf);
@@ -312,13 +267,48 @@ int wait_event()
                         return IPSTARVE;
                 } 
             }
+        } else if (retval  == 0) {
+            printf("retval == 0\n");
+            //時間切れ
+        } else {
+            //select no update
+            printf("errno:%d\n", errno);
+            printf("mycnt:%d\n", mycnt++);
+
+            if (errno == 4) {
+                if (alrmflag == 1) {
+                    for (p = client_list.fp; p !=  &client_list; p = p->fp) { 
+                        if (p->status == IP_ALLOC)  count_down();
+                        if (p->status == REQUEST_WAIT) {
+                            time10+=1;
+                            if (time10 > 10) {
+                                fprintf(stderr, "timeout\n");
+                                if (timeoutflag) exit(1);
+                                else {
+                                    timeoutflag += 1;
+                                    time10 = 0;
+                                    for (p=client_list.fp; p!=&client_list;p=p->fp) {
+                                        if (p->status == REQUEST_WAIT) {
+                                            p->status--; soffer();
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+            } 
+            alrmflag = 0;
+            loop = 1;
+            continue;
         }
         printf("loop:%d\n", loop);
 
     } while(loop);
 
 }
-
 
 int check_cli_list(struct sockaddr_in skt)
 {
@@ -451,7 +441,6 @@ void sack()
    //記録
    p->id.s_addr = skt.sin_addr.s_addr;
    p->port = ntohs(skt.sin_port);
-   p->rttl = 0;
 
    fprintf(stderr, "send\n");
    print_buf(rbuf);
