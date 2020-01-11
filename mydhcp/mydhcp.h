@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <error.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
