@@ -11,7 +11,7 @@
 
 int main() {
     /* ポート番号、ソケット */
-    unsigned short port = 50002;
+    unsigned short port = 50012;
     int srcSocket; // 自分
     int dstSocket; // 相手
 
