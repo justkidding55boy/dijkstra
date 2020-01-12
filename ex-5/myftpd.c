@@ -1,13 +1,9 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <string.h>
-#include <stdlib.h>
+
+#include "my.h"
 
 #define BUFFER_SIZE 256
+//proc.c
+extern void print_buf(struct ftpmsg);
 
 int main() {
     /* ポート番号、ソケット */
@@ -59,16 +55,19 @@ int main() {
     int status;
     while (1) {
         memset(buffer, 0, sizeof buffer);
-        numrcv = recv(dstSocket, buffer, BUFFER_SIZE, 0);
+        struct ftpmsg rmsg;
+        memset(&rmsg, 0, sizeof rmsg);
+        numrcv = recv(dstSocket, &rmsg, sizeof rmsg, 0);
         if (numrcv == 0 || numrcv == -1) {
             status = close(dstSocket);
             break;
         }
-        printf("received: %s\n", buffer);
+        print_buf(rmsg);
+        /*
         char sbuffer[BUFFER_SIZE];
         memset(sbuffer, 0, sizeof sbuffer);
         strncpy(sbuffer, buffer, sizeof(sbuffer));
-        send(dstSocket, sbuffer, strlen(sbuffer), 0);
+        send(dstSocket, sbuffer, strlen(sbuffer), 0); */
     }
     return 0;
 }
