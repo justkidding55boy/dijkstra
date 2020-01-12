@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 //type
 #define QUIT 0x01

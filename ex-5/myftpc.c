@@ -1,4 +1,4 @@
-#include <stdio.h>
+/*#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -7,23 +7,20 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <ctype.h>
+#include <ctype.h>*/
 #include "my.h"
 
 //proc.c
 extern void print_buf(struct ftpmsg);
+extern void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data);
+
+int socket_init(const char *destination);
 
 int main(int argc, char ** argv) {
 
     char destination[MAXCHAR];
     memset(destination, 0, sizeof destination);
-    unsigned short port = 50012;
-    fprintf(stderr, "CAUTION: I'm using port %d for the congestion avoidance\n", port);
-    int dstSocket;
-
-    struct sockaddr_in dstAddr;
-    memset( &dstAddr, 0, sizeof(dstAddr));
-
+  
 
     if (argc == 2) {
         strncpy(destination, argv[1], sizeof(destination));
@@ -31,6 +28,39 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "Please input the host name\n");
         exit(1);
     }
+
+    int dstSocket = socket_init(destination);
+    
+    int i;
+    for (i = 0; i < 2; i++) {
+        printf("sending...\n");
+        send_msg(dstSocket, CMDERR, 0x02, "msg");
+
+        struct ftpmsg rmsg;
+        memset(&rmsg, 0, sizeof rmsg);
+        printf("received:\n");
+        recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+        print_buf(rmsg);
+        sleep(1);
+    }
+    send_msg(dstSocket, CMDERR, 0x02, "client finish");
+    printf("client finished\n");
+    close(dstSocket);
+    //freeaddrinfo(res);
+    return 0;
+}
+
+
+
+
+int socket_init(const char *destination)
+{
+    unsigned short port = 50012;
+    fprintf(stderr, "CAUTION: I'm using port %d for the congestion avoidance\n", port);
+    int dstSocket;
+
+    struct sockaddr_in dstAddr;
+    memset( &dstAddr, 0, sizeof(dstAddr));
 
     struct addrinfo hints, *res;
     char *node;
@@ -51,6 +81,7 @@ int main(int argc, char ** argv) {
         exit(1);
     }
 
+
     //res->ai_addrがソケットアドレスの領域を指す (struct sockaddr *)
 
     if ((sd = socket(res->ai_family, res->ai_socktype,
@@ -65,7 +96,7 @@ int main(int argc, char ** argv) {
     inet_ntop(res->ai_family, ptr, address, sizeof address);
     printf("The host IP:%s\n", address);
     sprintf(destination,"%s", address);
-    
+
     struct in_addr ipaddr;
 
     if (inet_aton(destination, &ipaddr) <= 0) {
@@ -85,34 +116,10 @@ int main(int argc, char ** argv) {
         perror("connect");
         exit(1);
     }
-    
-    
-    int i;
-    for (i = 0; i < 10; i++) {
-        printf("sending...\n");
-        //send(sd, toSendText, strlen(toSendText) + 1, 0);
-        char *toSendText = "This is a test";
-        struct ftpmsg msg;
-        memset(&msg, 0, sizeof msg);
-        msg.type = CMDERR;
-        msg.code  = 0x02;
-        sprintf(msg.data, "msg:%d", i);
-        msg.datalen = strlen(msg.data);
-        send(dstSocket, &msg, sizeof msg, 0);
-        print_buf(msg);
-        //send(dstSocket, toSendText, strlen(toSendText) + 1, 0);
-        /*
-        char buffer[256];
-        memset(buffer, 0, sizeof buffer);
-        recv(dstSocket, buffer, sizeof(buffer), 0);
-        //recv(sd, buffer, sizeof(buffer), 0);
-        printf("receive:%s\n", buffer);
-        */
-        sleep(1);
-    }
-
-    //close(dstSocket);
-    freeaddrinfo(res);
-    return 0;
+    return dstSocket;
 }
+
+
+
+
 
