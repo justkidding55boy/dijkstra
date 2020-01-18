@@ -73,13 +73,10 @@ int main() {
                 }
                 continue;
             }
-            printf("received\n");
+            printf("received:");
             print_buf(rmsg);
             server_execute(dstSocket, rmsg);
 
-
-            printf("sending...\n");
-            send_msg(dstSocket, CMD, 0x00, NULL);
             } else {
                 printf("retval==0\n");
             }
@@ -92,7 +89,7 @@ int main() {
 int socket_init()
 {
   /* ポート番号、ソケット */
-    unsigned short port = 50024;
+    unsigned short port = 51199;
     int srcSocket; // 自分
 
 

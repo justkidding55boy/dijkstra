@@ -29,14 +29,15 @@ struct commands {
     char *desc;
     int typenum;
     int codenum;
-    void (*func)(int dstSocket, char *data); //server_func
+    void (*func)(int dstSocket, char *data, int datalen); //server_func
 };
 
 void spwd_proc();
+void scd_proc();
 static struct commands cmdtbl[] = {
     {"QUIT", QUIT, -1},
     {"PWD", PWD, -1, spwd_proc},
-    {"CWD", CWD, -1},
+    {"CWD", CWD, -1, scd_proc},
     {"LIST", LIST, -1},
     {"RETR", RETR, -1},
     {"STOR", STOR, -1},

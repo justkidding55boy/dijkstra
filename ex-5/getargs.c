@@ -5,9 +5,9 @@
 #define MAXCOM 10
 
 
-void getargs(int *argc, char *argv[], char *buf)
+void getargs(int *argc, char **argv, char *buf)
 {
-	
+
 	char c;
 	int cnt = 0;
 	*argc = 0;
@@ -46,19 +46,21 @@ void getargs(int *argc, char *argv[], char *buf)
 
 	//argv[*argc][charcnt] = '\0';
 
+
 	argv[*argc] = NULL;
 
-	/*
+    /*	
     printf("inputed:%d\n", *argc);
-	int i;
 	for (i = 0; i < *argc; i++) {
 		printf("argv[%d]: ", i);
 		printf("%s\n", argv[i]);
-	} */
+	} 
+    */
 }
 
 
 /*
+
 int main()
 {
     

@@ -1,15 +1,40 @@
 #include "my.h"
 
 void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data);
+void print_buf(struct ftpmsg buf);
 
 void spwd_proc(int dstSocket) {
-    printf("server pwd\n");
+
     char path[MAXCHAR];
     if (getcwd(path, sizeof path) == NULL) {
         perror("getcwd");
     }
     send_msg(dstSocket, CMD, 0x00, path);
 
+}
+
+void scd_proc(int dstSocket, char *buf, int buflen) 
+{
+    char path[MAXCHAR];
+    memset(path, 0, sizeof path);
+
+    memcpy(path, buf, buflen);
+    path[buflen] = '\0';
+
+
+    if (path == NULL) {
+        chdir(getenv("HOME"));
+    } else {
+        if (strcmp(path, "~") == 0) {
+            chdir(getenv("HOME"));
+        } else {
+            if (chdir(path) < 0) {
+                send_msg(dstSocket, FILEERR, 0x00, NULL);
+            } else {
+                send_msg(dstSocket, CMD, 0x00, NULL);
+            }
+        }
+    }
 }
 
 void server_execute(int dstSocket, struct ftpmsg rmsg)
@@ -22,9 +47,8 @@ void server_execute(int dstSocket, struct ftpmsg rmsg)
     }
 
     if (rmsg.datalen <= MAXCHAR)
-        (*pt->func)(dstSocket, rmsg.data);
+        (*pt->func)(dstSocket, rmsg.data, rmsg.datalen);
 
-    
 }
 
 void quit_proc(int dstSocket)
@@ -40,7 +64,7 @@ void pwd_proc(int dstSocket)
 
     struct ftpmsg rmsg;
     memset(&rmsg, 0, sizeof rmsg);
-    printf("received:\n");
+    printf("received:");
     recv(dstSocket, &rmsg, sizeof(rmsg), 0);
     print_buf(rmsg);
     printf("server pwd: %s\n", rmsg.data);
@@ -53,6 +77,11 @@ void cd_proc(int dstSocket, char *av[], int ac)
         send_msg(dstSocket, CWD, -1, av[1]);
     else 
         fprintf(stderr, "please input the path\n");
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
+    printf("received:");
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(rmsg);
 
 }
 
@@ -97,7 +126,7 @@ void help_proc()
 
 }
 
-int execute(int dstSocket, char *argv[], int argc)
+int execute(int dstSocket, char *argv[MAXCHAR], int argc)
 {
 
     struct cmds *p;
@@ -105,12 +134,14 @@ int execute(int dstSocket, char *argv[], int argc)
     for (p = cmdtab; p->cmd; p++) {
 
         if (strcmp(argv[0], p->cmd) == 0) {
+            printf("execute:%s\n", p->cmd);
             (*p->func)(dstSocket, argv, argc);
             return 1;
         }
 
     }
     printf("command not found\n");
+
     return 0;
     
 
@@ -130,7 +161,6 @@ void print_buf(struct ftpmsg buf)
     printf("data:%s\n", buf.data);
 
 
-    fprintf(stderr, "*****************************\n\n\n");
 }
 
 void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data)
@@ -139,12 +169,19 @@ void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data)
         memset(&msg, 0, sizeof msg);
         msg.type = type;
         msg.code  = code;
-        sprintf(msg.data, data);
+        if (data != NULL)
+            sprintf(msg.data, "%s", data);
+
+
+
+
+        
         msg.datalen = strlen(msg.data);
         if (send(dstSocket, &msg, sizeof msg, 0) < 0) {
             perror("send");
             //exit(1);
         }
+        printf("sent:");
         print_buf(msg);
 
 }

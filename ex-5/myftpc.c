@@ -13,7 +13,7 @@
 //proc.c
 extern void print_buf(struct ftpmsg);
 extern void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data);
-int execute(int, char *[], int);
+int execute(int, char *av[MAXCHAR], int);
 
 int socket_init(const char *destination);
 
@@ -37,23 +37,45 @@ int main(int argc, char ** argv) {
 
     char buf[MAXCHAR];
     printf("myftps:"); memset(buf, 0, sizeof buf);
-    while (fgets(buf,MAXCHAR-1, stdin) != NULL) {
 
-        char *av[MAXCHAR];
-        int i;
-        for (i = 0; i < 10; i++)
-            av[i] = malloc(sizeof (char *));
-        int ac;
+
+    int i;
+
+    while (fgets(buf,MAXCHAR-1, stdin) != NULL) {
+        printf("koko2\n");
+        
+        /*
+        for (i = 0; i < 10; i++)  {
+            printf("av[%d];%s\n", i, av[i]);
+            printf("i = %d\n", i);
+            memset(av[i], 0,  MAXCHAR-1);
+        }
+        */
+        char **av;
+        av = malloc(sizeof (char *) * 10);
+
+        for (i = 0; i < 10; i++)  av[i] = malloc(sizeof (char) * MAXCHAR);
+        
+
+        int ac = 0;
+        printf("koko\n");
         getargs(&ac, av, buf);
+
         memset(buf, 0, sizeof buf);
+        if (ac==0) {
+            printf("myftps:");
+            continue;
+        }
+
         if (execute(dstSocket, av, ac) == 0) {
             continue;
         }
+
         printf("myftps:");
+        for (i = 0; i < 10; i++)  free(av[i]);
 
     }
     
-    int i;
     for (i = 0; i < 2; i++) {
         printf("sending...\n");
         send_msg(dstSocket, CMDERR, 0x02, "msg");
@@ -74,7 +96,7 @@ int main(int argc, char ** argv) {
 
 int socket_init(const char *destination)
 {
-    unsigned short port = 50024;
+    unsigned short port = 51199;
     fprintf(stderr, "CAUTION: I'm using port %d for the congestion avoidance\n", port);
     int dstSocket;
 
