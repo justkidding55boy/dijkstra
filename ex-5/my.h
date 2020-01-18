@@ -29,11 +29,13 @@ struct commands {
     char *desc;
     int typenum;
     int codenum;
+    void (*func)(int dstSocket, char *data); //server_func
 };
 
+void spwd_proc();
 static struct commands cmdtbl[] = {
     {"QUIT", QUIT, -1},
-    {"PWD", PWD, -1},
+    {"PWD", PWD, -1, spwd_proc},
     {"CWD", CWD, -1},
     {"LIST", LIST, -1},
     {"RETR", RETR, -1},
@@ -51,6 +53,30 @@ static struct commands cmdtbl[] = {
     {"DATA data lasts", DATA, 0x00},
     {"DATA data end", DATA, 0x01},
     {NULL,  0, -1}
+};
+
+
+
+void quit_proc(), pwd_proc(), cd_proc(),
+dir_proc(), lpwd_proc(), lcd_proc(), ldir_proc(),
+get_proc(), put_proc(), help_proc();
+
+struct cmds {
+    char *cmd;
+    void (*func)(int dstSocket, char *av[], int ac);
+};
+static struct cmds cmdtab [] = {
+    {"quit", quit_proc},
+    {"pwd", pwd_proc},
+    {"cd", cd_proc},
+    {"dir", dir_proc},
+    {"lpwd", lpwd_proc},
+    {"lcd", lcd_proc},
+    {"ldir", ldir_proc},
+    {"get", get_proc},
+    {"put", put_proc},
+    {"help", help_proc},
+    {NULL, NULL}
 };
 
 

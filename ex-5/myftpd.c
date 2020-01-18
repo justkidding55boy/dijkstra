@@ -6,6 +6,7 @@
 extern void print_buf(struct ftpmsg);
 extern void send_msg(int dstSocket, uint8_t type, uint8_t code, char *data);
 extern void time_init();
+void server_execute(int dstSocket, struct ftpmsg rmsg);
 
 int socket_init();
 int listen_accept(int);
@@ -54,21 +55,35 @@ int main() {
             if ((r = recv(dstSocket, &rmsg, sizeof rmsg, 0)) < 0) {
                 perror("recv");
                 close(dstSocket);
+                dstSocket = listen_accept(srcSocket);
+                if (!FD_ISSET(dstSocket, &rdfds)) {
+                    retval = select(dstSocket+1, &rdfds, NULL, NULL, &tv); 
+                } else {
+                    printf("same user: skip\n");
+                }
                 break;
             } else if  (r == 0) {
                 close(dstSocket);
                 printf("finish\n");
                 dstSocket = listen_accept(srcSocket);
+                if (!FD_ISSET(dstSocket, &rdfds)) {
+                    retval = select(dstSocket+1, &rdfds, NULL, NULL, &tv); 
+                } else {
+                    printf("same user: skip\n");
+                }
                 continue;
             }
             printf("received\n");
             print_buf(rmsg);
+            server_execute(dstSocket, rmsg);
+
 
             printf("sending...\n");
-            send_msg(dstSocket, QUIT, 1, "server to client");
+            send_msg(dstSocket, CMD, 0x00, NULL);
             } else {
                 printf("retval==0\n");
             }
+
     }
 
     return 0;
@@ -77,7 +92,7 @@ int main() {
 int socket_init()
 {
   /* ポート番号、ソケット */
-    unsigned short port = 50012;
+    unsigned short port = 50024;
     int srcSocket; // 自分
 
 

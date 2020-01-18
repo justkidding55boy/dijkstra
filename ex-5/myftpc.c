@@ -13,8 +13,12 @@
 //proc.c
 extern void print_buf(struct ftpmsg);
 extern void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data);
+int execute(int, char *[], int);
 
 int socket_init(const char *destination);
+
+//getargs.c
+void getargs(int *argc, char *argv[], char *buf);
 
 int main(int argc, char ** argv) {
 
@@ -30,6 +34,24 @@ int main(int argc, char ** argv) {
     }
 
     int dstSocket = socket_init(destination);
+
+    char buf[MAXCHAR];
+    printf("myftps:"); memset(buf, 0, sizeof buf);
+    while (fgets(buf,MAXCHAR-1, stdin) != NULL) {
+
+        char *av[MAXCHAR];
+        int i;
+        for (i = 0; i < 10; i++)
+            av[i] = malloc(sizeof (char *));
+        int ac;
+        getargs(&ac, av, buf);
+        memset(buf, 0, sizeof buf);
+        if (execute(dstSocket, av, ac) == 0) {
+            continue;
+        }
+        printf("myftps:");
+
+    }
     
     int i;
     for (i = 0; i < 2; i++) {
@@ -52,7 +74,7 @@ int main(int argc, char ** argv) {
 
 int socket_init(const char *destination)
 {
-    unsigned short port = 50012;
+    unsigned short port = 50024;
     fprintf(stderr, "CAUTION: I'm using port %d for the congestion avoidance\n", port);
     int dstSocket;
 
