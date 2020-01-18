@@ -50,9 +50,6 @@ int main(int argc, char ** argv) {
     return 0;
 }
 
-
-
-
 int socket_init(const char *destination)
 {
     unsigned short port = 50012;

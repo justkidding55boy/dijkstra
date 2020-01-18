@@ -7,6 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <signal.h>
 
 //type
 #define QUIT 0x01
@@ -52,10 +55,12 @@ static struct commands cmdtbl[] = {
 
 
 #define MAXCHAR 256
+#define DATASIZE 1024
+#define TIMEOUT 30
 
 struct ftpmsg {
     uint8_t type;
     uint8_t  code;
     uint16_t datalen;
-    char data[MAXCHAR];
+    char data[DATASIZE];
 };

@@ -5,37 +5,70 @@
 //proc.c
 extern void print_buf(struct ftpmsg);
 extern void send_msg(int dstSocket, uint8_t type, uint8_t code, char *data);
+extern void time_init();
 
 int socket_init();
 int listen_accept(int);
 
+void sig_alrm()
+{
+    printf("time_alrt\n");
+}
+
+void sig_pipe()
+{
+    printf("sig_pipe\n");
+}
 int main() {
   
     int srcSocket = socket_init();
     int dstSocket = listen_accept(srcSocket);
 
+    //time_init();
+    signal(SIGALRM, sig_alrm);
+    signal(SIGPIPE, sig_pipe);
+
+    fd_set rdfds;
+    FD_ZERO(&rdfds);
+    FD_SET(0, &rdfds);
+    FD_SET(dstSocket, &rdfds);
+    struct timeval tv;
+    tv.tv_sec = TIMEOUT;
+    tv.tv_usec = 0;
+
+    int retval = select(dstSocket+1, &rdfds, NULL, NULL, &tv);
+
     /* パケット受信 */
     while (1) {
 
-        struct ftpmsg rmsg;
-        memset(&rmsg, 0, sizeof rmsg);
+        if (retval == -1) {
+            printf("retval: -1\n");
+            
+        } else if (retval) {
+            //なんらかの更新
+            printf("retval>0\n");
+            struct ftpmsg rmsg;
+            memset(&rmsg, 0, sizeof rmsg);
 
-        int r;
-        if ((r = recv(dstSocket, &rmsg, sizeof rmsg, 0)) < 0) {
-            perror("recv");
-            close(dstSocket);
-            break;
-        } else if  (r == 0) {
-            close(dstSocket);
-            printf("finish\n");
-            dstSocket = listen_accept(srcSocket);
-            continue;
-        }
-        printf("received\n");
-        print_buf(rmsg);
+            int r;
+            if ((r = recv(dstSocket, &rmsg, sizeof rmsg, 0)) < 0) {
+                perror("recv");
+                close(dstSocket);
+                break;
+            } else if  (r == 0) {
+                close(dstSocket);
+                printf("finish\n");
+                dstSocket = listen_accept(srcSocket);
+                continue;
+            }
+            printf("received\n");
+            print_buf(rmsg);
 
-        printf("sending...\n");
-        send_msg(dstSocket, QUIT, 0, "server to client");
+            printf("sending...\n");
+            send_msg(dstSocket, QUIT, 1, "server to client");
+            } else {
+                printf("retval==0\n");
+            }
     }
 
     return 0;

@@ -30,3 +30,18 @@ void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data)
         print_buf(msg);
 
 }
+
+void time_init()
+{
+    struct itimerval ttltimer;
+    ttltimer.it_value.tv_sec = 1;
+    ttltimer.it_value.tv_usec = 0;
+    ttltimer.it_interval.tv_sec = 1;
+    ttltimer.it_interval.tv_usec = 0;
+    if (setitimer(ITIMER_REAL, &ttltimer, NULL) < 0) {
+        perror("setitimer");
+        exit(1);
+    }
+    printf("time_init\n");
+
+}
