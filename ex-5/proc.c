@@ -5,7 +5,7 @@ void print_buf(struct ftpmsg buf);
 
 int myport()
 {
-    return 51297;
+    return 51290;
 }
 
 void spwd_proc(int dstSocket) {
@@ -42,15 +42,14 @@ void scd_proc(int dstSocket, char *buf, int buflen)
     }
 }
 
-extern void ls(int dstSocket, int argc, char *argv[]);
+extern void ls_send(int dstSocket, int argc, char *argv[]);
 void slist_proc(int dstSocket, char *path, int pathlen)
 {
-    printf("slist\n");
 
     if (path == NULL) {
         int ac = 1;
         char *av[] = {"ls", NULL};
-        ls(dstSocket, ac, av);
+        ls_send(dstSocket, ac, av);
     } else {
         int ac = 2;
         char **av;
@@ -61,8 +60,35 @@ void slist_proc(int dstSocket, char *path, int pathlen)
         strcpy(av[0], "ls");
         strcpy(av[1], path);
 
-        ls(dstSocket, ac, av);
+        ls_send(dstSocket, ac, av);
     }
+}
+
+void sget_proc(int dstSocket, char *filename, int datalen)
+{
+    int r = open(filename, O_RDONLY);
+    if (r < 0) {
+        if (errno == EACCES) {
+            send_msg(dstSocket, FILEERR, 0x01, NULL);
+            return ;
+        } else {
+            send_msg(dstSocket, UNKWNERR, 0x05, NULL);
+        }
+    } else {
+        send_msg(dstSocket, CMD, 0x01, NULL);
+    }
+
+    char buf[DATASIZE];
+    memset(buf, 0, DATASIZE);
+    int t;
+    while ((t = read(r, buf, DATASIZE-1)) >  0) {
+        send_msg(dstSocket, DATA, 0x01, buf);
+        memset(buf, 0, DATASIZE);
+    }
+    if (t < 0) 
+        perror("read");
+
+    send_msg(dstSocket, DATA, 0x00, NULL);
 }
 
 
@@ -131,14 +157,162 @@ void dir_proc(int dstSocket, char *av[], int ac)
     recv(dstSocket, &rmsg, sizeof(rmsg), 0);
     print_buf(rmsg);
     //printf("%s", rmsg.data);
-    while (rmsg.code == 0x01) {
+    do {
         memset(&rmsg, 0, sizeof rmsg);
         recv(dstSocket, &rmsg, sizeof rmsg, 0);
         printf("%s", rmsg.data);
         //print_buf(rmsg);
-    }
+    } while (rmsg.type == DATA && rmsg.code == 0x01); 
  
 }
+
+void extract_filename(char *path, char *target)
+{
+    char *ans;
+    ans = strrchr(path, '/');
+    if (ans == NULL)
+        strcpy(target, path);
+    else {
+        strcpy(target, ans+1);
+    }
+}
+
+void get_proc(int dstSocket, char *av[], int ac)
+{
+    char serverfile[DATASIZE];
+    char clientfile[DATASIZE];
+    if (ac > 3 || ac == 1) {
+        fprintf(stderr, "please input path properly\n");
+        return ;
+    } else if (ac == 3) {
+        strcpy(clientfile, av[2]);
+    } else {
+        extract_filename(av[1], clientfile);
+    }
+    strcpy(serverfile, av[1]);
+    send_msg(dstSocket, RETR, 0, serverfile);
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
+    printf("received:");
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(rmsg);
+
+    int w = open(clientfile, O_WRONLY|O_CREAT|O_APPEND,  0644);
+
+    if (w < 0) {
+        perror("open");
+        return ;
+    }
+    if (write(w, rmsg.data, rmsg.datalen) < 0) {
+        perror("write");
+        return ;
+    }
+
+
+    do {
+        memset(&rmsg, 0, sizeof rmsg);
+        recv(dstSocket, &rmsg, sizeof rmsg, 0);
+        printf("%s", rmsg.data);
+        if (write(w, rmsg.data, rmsg.datalen) < 0) {
+            perror("write");
+            return ;
+        }
+        //print_buf(rmsg);
+    } while (rmsg.type == DATA && rmsg.code == 0x01); 
+ 
+}
+
+void put_proc(int dstSocket, char *av[], int ac)
+{
+    char serverfile[DATASIZE];
+    char clientfile[DATASIZE];
+    if (ac > 3 || ac == 1) {
+        fprintf(stderr, "please input path properly\n");
+        return ;
+    } else if (ac == 3) {
+        strcpy(serverfile, av[2]);
+    } else {
+        extract_filename(av[1], serverfile);
+    }
+    strcpy(clientfile, av[1]);
+
+    int r = open(clientfile, O_RDONLY);
+    if (r < 0) {
+        if (errno == EACCES) {
+            fprintf(stderr, "permission denied\n");
+        } else {
+            fprintf(stderr, "ukknown error\n");
+        }
+        return ;
+    } 
+
+
+    send_msg(dstSocket, STOR, 0, serverfile);
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
+    printf("received:");
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(rmsg);
+    //if OKでない時の分岐も考える
+    if (rmsg.type == CMD && rmsg.code == 0x02) {
+       //OK 
+    } else if (rmsg.type == FILEERR && rmsg.code == 0x01){
+        fprintf(stderr, "file permission denied\n");
+        return ;
+    } else {
+        fprintf(stderr, "unknown code\n");
+        return ;
+    }
+    
+    char buf[DATASIZE];
+    memset(buf, 0, DATASIZE);
+    int t;
+    while ((t = read(r, buf, DATASIZE-1)) >  0) {
+        send_msg(dstSocket, DATA, 0x01, buf);
+        memset(buf, 0, DATASIZE);
+    }
+    if (t < 0) 
+        perror("read");
+
+    send_msg(dstSocket, DATA, 0x00, NULL);
+}
+
+void sput_proc(int dstSocket, char *filename, int datalen)
+{
+    struct ftpmsg rmsg;
+
+    //最初にきたものはfilenameが入っている
+    char serverfile[DATASIZE];
+    memcpy(serverfile, filename, datalen);
+    //serverfile[datalen] = '\0';
+
+   int w = open(serverfile, O_WRONLY|O_CREAT|O_APPEND,  0644);
+
+    if (w < 0) {
+        if (errno == EACCES) {
+            send_msg(dstSocket, FILEERR, 0x01, NULL);
+        } else {
+            send_msg(dstSocket, UNKWNERR, 0x05, NULL);
+        }
+        return ;
+    } else
+        send_msg(dstSocket, CMD,  0x02, NULL);
+
+
+    do {
+        memset(&rmsg, 0, sizeof rmsg);
+        recv(dstSocket, &rmsg, sizeof rmsg, 0);
+        printf("%s", rmsg.data);
+        if (write(w, rmsg.data, rmsg.datalen) < 0) {
+            perror("write");
+            return ;
+        }
+        //print_buf(rmsg);
+    } while (rmsg.type == DATA && rmsg.code == 0x01); 
+
+}
+
+
 
 void lpwd_proc()
 {
@@ -175,24 +349,25 @@ void lcd_proc(int dstSocket, char *av[], int ac)
     }
 }
 
-void ldir_proc()
+extern void ls(int argc, char *argv[]);
+void ldir_proc(int dstSocket, char *av[], int ac)
 {
 
+    ls(ac, av);
 }
 
-void get_proc()
-{
-
-}
-
-void put_proc()
-{
-
-}
 
 void help_proc()
 {
 
+    printf("Display the help\n");
+    struct cmds *p;
+
+    for (p = cmdtab; p->cmd; p++) {
+
+        printf("%5s%s\n", p->cmd, p->desc);
+
+    }
 }
 
 int execute(int dstSocket, char *argv[MAXCHAR], int argc)
@@ -212,8 +387,6 @@ int execute(int dstSocket, char *argv[MAXCHAR], int argc)
     printf("command not found\n");
 
     return 0;
-    
-
 }
 
 

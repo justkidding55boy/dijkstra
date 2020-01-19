@@ -10,6 +10,9 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 //type
 #define QUIT 0x01
@@ -35,13 +38,16 @@ struct commands {
 void spwd_proc(int dstSocket);
 void scd_proc(int dstSocket, char *buf, int buflen);
 void slist_proc(int dstSocket, char *path, int pathlen);
+void sget_proc(int dstSocket, char *filename, int datalen);
+void sput_proc(int dstSocket, char *filename, int datalen);
+
 static struct commands cmdtbl[] = {
     {"QUIT", QUIT, -1},
     {"PWD", PWD, -1, spwd_proc},
     {"CWD", CWD, -1, scd_proc},
     {"LIST", LIST, -1, slist_proc},
-    {"RETR", RETR, -1},
-    {"STOR", STOR, -1},
+    {"RETR", RETR, -1, sget_proc},
+    {"STOR", STOR, -1, sput_proc},
 
     {"CMD OK", CMD, 0x00},
     {"CMD OK, data lasts (s->c)", CMD, 0x01},
@@ -52,8 +58,8 @@ static struct commands cmdtbl[] = {
     {"FILEERR file doesn't exist", FILEERR, 0x00},
     {"FILEERR file permission denied", FILEERR, 0x01},
     {"UNKWNERR unknown error", UNKWNERR, 0x05},
-    {"DATA data lasts", DATA, 0x00},
-    {"DATA data end", DATA, 0x01},
+    {"DATA data end", DATA, 0x00},
+    {"DATA data lasts", DATA, 0x01},
     {NULL,  0, -1}
 };
 
@@ -66,18 +72,19 @@ get_proc(), put_proc(), help_proc();
 struct cmds {
     char *cmd;
     void (*func)(int dstSocket, char *av[], int ac);
+    char *desc;
 };
 static struct cmds cmdtab [] = {
-    {"quit", quit_proc},
-    {"pwd", pwd_proc},
-    {"cd", cd_proc},
-    {"dir", dir_proc},
-    {"lpwd", lpwd_proc},
-    {"lcd", lcd_proc},
-    {"ldir", ldir_proc},
-    {"get", get_proc},
-    {"put", put_proc},
-    {"help", help_proc},
+    {"quit", quit_proc, ": Finish myftpc"},
+    {"pwd", pwd_proc, ": Display the server current directory"},
+    {"cd", cd_proc, " path: Change the server directory"},
+    {"dir", dir_proc, " [path] : Display the file information"},
+    {"lpwd", lpwd_proc, ": Display the client current directory"},
+    {"lcd", lcd_proc, " path: Change the client directory"},
+    {"ldir", ldir_proc, " [path]: Display the client file information"},
+    {"get", get_proc, " path1 [path2]: Send file from server to client"},
+    {"put", put_proc, " path1 [path2]: Send file from client to server"},
+    {"help", help_proc, ": Display the help message"},
     {NULL, NULL}
 };
 

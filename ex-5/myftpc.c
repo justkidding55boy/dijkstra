@@ -60,9 +60,9 @@ int main(int argc, char ** argv) {
 
         if (strcmp(av[0], "quit") == 0) break;
 
-        if (execute(dstSocket, av, ac) == 0) continue;
-
+        execute(dstSocket, av, ac);
         printf("myftps:");
+        
         for (i = 0; i < 10; i++)  free(av[i]);
 
     }
