@@ -3,6 +3,11 @@
 void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data);
 void print_buf(struct ftpmsg buf);
 
+int myport()
+{
+    return 51297;
+}
+
 void spwd_proc(int dstSocket) {
 
     char path[MAXCHAR];
@@ -37,6 +42,29 @@ void scd_proc(int dstSocket, char *buf, int buflen)
     }
 }
 
+extern void ls(int dstSocket, int argc, char *argv[]);
+void slist_proc(int dstSocket, char *path, int pathlen)
+{
+    printf("slist\n");
+
+    if (path == NULL) {
+        int ac = 1;
+        char *av[] = {"ls", NULL};
+        ls(dstSocket, ac, av);
+    } else {
+        int ac = 2;
+        char **av;
+        av = malloc(sizeof(char *) * 3);
+        int i;
+        for (i = 0; i < 3; i++) malloc(sizeof(char) * DATASIZE); 
+
+        strcpy(av[0], "ls");
+        strcpy(av[1], path);
+
+        ls(dstSocket, ac, av);
+    }
+}
+
 void server_execute(int dstSocket, struct ftpmsg rmsg)
 {
     struct commands *pt;
@@ -45,8 +73,9 @@ void server_execute(int dstSocket, struct ftpmsg rmsg)
             if  (pt->codenum == rmsg.code || pt->codenum == -1) 
                 break;
     }
-
-    if (rmsg.datalen <= MAXCHAR)
+    if (rmsg.datalen == 0)
+        (*pt->func)(dstSocket, NULL, 0);
+    else if (rmsg.datalen <= MAXCHAR)
         (*pt->func)(dstSocket, rmsg.data, rmsg.datalen);
 
 }
@@ -75,8 +104,10 @@ void cd_proc(int dstSocket, char *av[], int ac)
 {
     if (ac == 2)
         send_msg(dstSocket, CWD, -1, av[1]);
-    else 
+    else {
         fprintf(stderr, "please input the path\n");
+        return ;
+    }
     struct ftpmsg rmsg;
     memset(&rmsg, 0, sizeof rmsg);
     printf("received:");
@@ -93,7 +124,19 @@ void dir_proc(int dstSocket, char *av[], int ac)
     else if (ac == 1){
         send_msg(dstSocket, LIST, -1, NULL);
     }
-
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
+    printf("received:");
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    //print_buf(rmsg);
+    printf("%s", rmsg.data);
+    while (rmsg.code == 0x01) {
+        memset(&rmsg, 0, sizeof rmsg);
+        recv(dstSocket, &rmsg, sizeof rmsg, 0);
+        printf("%s", rmsg.data);
+        //print_buf(rmsg);
+    }
+ 
 }
 
 void lpwd_proc()
@@ -169,14 +212,15 @@ void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data)
         memset(&msg, 0, sizeof msg);
         msg.type = type;
         msg.code  = code;
-        if (data != NULL)
-            sprintf(msg.data, "%s", data);
 
-
-
+        if (data != NULL) {
+           strncpy(msg.data, data, strlen(data));
+           msg.datalen = strlen(data);
+        } else {
+            msg.datalen = 0;
+        }
 
         
-        msg.datalen = strlen(msg.data);
         if (send(dstSocket, &msg, sizeof msg, 0) < 0) {
             perror("send");
             //exit(1);

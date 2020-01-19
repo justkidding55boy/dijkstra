@@ -42,23 +42,14 @@ int main(int argc, char ** argv) {
     int i;
 
     while (fgets(buf,MAXCHAR-1, stdin) != NULL) {
-        printf("koko2\n");
-        
-        /*
-        for (i = 0; i < 10; i++)  {
-            printf("av[%d];%s\n", i, av[i]);
-            printf("i = %d\n", i);
-            memset(av[i], 0,  MAXCHAR-1);
-        }
-        */
+
         char **av;
         av = malloc(sizeof (char *) * 10);
 
         for (i = 0; i < 10; i++)  av[i] = malloc(sizeof (char) * MAXCHAR);
         
-
         int ac = 0;
-        printf("koko\n");
+
         getargs(&ac, av, buf);
 
         memset(buf, 0, sizeof buf);
@@ -75,28 +66,17 @@ int main(int argc, char ** argv) {
         for (i = 0; i < 10; i++)  free(av[i]);
 
     }
-    
-    for (i = 0; i < 2; i++) {
-        printf("sending...\n");
-        send_msg(dstSocket, CMDERR, 0x02, "msg");
 
-        struct ftpmsg rmsg;
-        memset(&rmsg, 0, sizeof rmsg);
-        printf("received:\n");
-        recv(dstSocket, &rmsg, sizeof(rmsg), 0);
-        print_buf(rmsg);
-        sleep(1);
-    }
     send_msg(dstSocket, CMDERR, 0x02, "client finish");
     printf("client finished\n");
     close(dstSocket);
     //freeaddrinfo(res);
     return 0;
 }
-
+extern int myport();
 int socket_init(const char *destination)
 {
-    unsigned short port = 51199;
+    unsigned short port = myport();
     fprintf(stderr, "CAUTION: I'm using port %d for the congestion avoidance\n", port);
     int dstSocket;
 

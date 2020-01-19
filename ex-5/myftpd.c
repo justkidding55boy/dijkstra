@@ -77,19 +77,20 @@ int main() {
             print_buf(rmsg);
             server_execute(dstSocket, rmsg);
 
-            } else {
-                printf("retval==0\n");
-            }
+        } else {
+            printf("retval==0\n");
+        }
 
     }
 
     return 0;
 }
 
+extern int myport();
 int socket_init()
 {
   /* ポート番号、ソケット */
-    unsigned short port = 51199;
+    unsigned short port = myport();
     int srcSocket; // 自分
 
 

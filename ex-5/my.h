@@ -32,13 +32,14 @@ struct commands {
     void (*func)(int dstSocket, char *data, int datalen); //server_func
 };
 
-void spwd_proc();
-void scd_proc();
+void spwd_proc(int dstSocket);
+void scd_proc(int dstSocket, char *buf, int buflen);
+void slist_proc(int dstSocket, char *path, int pathlen);
 static struct commands cmdtbl[] = {
     {"QUIT", QUIT, -1},
     {"PWD", PWD, -1, spwd_proc},
     {"CWD", CWD, -1, scd_proc},
-    {"LIST", LIST, -1},
+    {"LIST", LIST, -1, slist_proc},
     {"RETR", RETR, -1},
     {"STOR", STOR, -1},
 
