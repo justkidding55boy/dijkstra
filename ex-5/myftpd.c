@@ -75,6 +75,16 @@ int main() {
             }
             printf("received:");
             print_buf(rmsg);
+            if (rmsg.type == QUIT) {
+                close(dstSocket);
+                printf("finish\n");
+                dstSocket = listen_accept(srcSocket);
+                if (!FD_ISSET(dstSocket, &rdfds)) {
+                } else {
+                    printf("same user: skip\n");
+                }
+                continue;
+            }
             server_execute(dstSocket, rmsg);
 
         } else {

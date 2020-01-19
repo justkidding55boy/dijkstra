@@ -44,6 +44,7 @@ void ls(int dstSocket, int argc, char *argv[])
     }
 
     printf("opendirに問題はない\n");
+    send_msg(dstSocket, CMD, 0x01, NULL);
 
 	struct dirent *dir;
     char tmp[DATASIZE];
@@ -71,14 +72,14 @@ void ls(int dstSocket, int argc, char *argv[])
             char ans3[DATASIZE];
 			sprintf(ans3, "%s ", dir->d_name);
             sprintf(tmp, "%s%s%s\n", ans1, ans2, ans3);
-            send_msg(dstSocket, CMD, 0x01, tmp);
+            send_msg(dstSocket, DATA, 0x01, tmp);
             //memcpy(ans+cnt, tmp, strlen(tmp));
             //cnt += strlen(tmp);
 			free(pms);
             printf("\ncnt:%d\n", cnt);
 	}
 
-    send_msg(dstSocket, CMD, 0x00, NULL);
+    send_msg(dstSocket, DATA, 0x00, NULL);
 
 
 	closedir(dp);	

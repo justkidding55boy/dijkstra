@@ -53,21 +53,20 @@ int main(int argc, char ** argv) {
         getargs(&ac, av, buf);
 
         memset(buf, 0, sizeof buf);
-        if (ac==0) {
+        if (ac == 0) {
             printf("myftps:");
             continue;
         }
 
-        if (execute(dstSocket, av, ac) == 0) {
-            continue;
-        }
+        if (strcmp(av[0], "quit") == 0) break;
+
+        if (execute(dstSocket, av, ac) == 0) continue;
 
         printf("myftps:");
         for (i = 0; i < 10; i++)  free(av[i]);
 
     }
 
-    send_msg(dstSocket, CMDERR, 0x02, "client finish");
     printf("client finished\n");
     close(dstSocket);
     //freeaddrinfo(res);

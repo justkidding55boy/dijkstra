@@ -65,6 +65,7 @@ void slist_proc(int dstSocket, char *path, int pathlen)
     }
 }
 
+
 void server_execute(int dstSocket, struct ftpmsg rmsg)
 {
     struct commands *pt;
@@ -128,8 +129,8 @@ void dir_proc(int dstSocket, char *av[], int ac)
     memset(&rmsg, 0, sizeof rmsg);
     printf("received:");
     recv(dstSocket, &rmsg, sizeof(rmsg), 0);
-    //print_buf(rmsg);
-    printf("%s", rmsg.data);
+    print_buf(rmsg);
+    //printf("%s", rmsg.data);
     while (rmsg.code == 0x01) {
         memset(&rmsg, 0, sizeof rmsg);
         recv(dstSocket, &rmsg, sizeof rmsg, 0);
@@ -141,12 +142,37 @@ void dir_proc(int dstSocket, char *av[], int ac)
 
 void lpwd_proc()
 {
-
+    char path[MAXCHAR];
+    if (getcwd(path, sizeof path) == NULL) {
+        perror("getcwd");
+    }
+    printf("lpwd:%s\n", path);
 }
 
-void lcd_proc()
+void lcd_proc(int dstSocket, char *av[], int ac)
 {
+    char path[MAXCHAR];
+    memset(path, 0, sizeof path);
 
+    if (ac != 2) {
+        fprintf(stderr, "input path\n");
+        return ;
+    }
+
+    memcpy(path, av[1], strlen(av[1])+1);
+
+
+    if (path == NULL) {
+        chdir(getenv("HOME"));
+    } else {
+        if (strcmp(path, "~") == 0) {
+            chdir(getenv("HOME"));
+        } else {
+            if (chdir(path) < 0) {
+                fprintf(stderr, "file error\n");
+            }
+        }
+    }
 }
 
 void ldir_proc()
