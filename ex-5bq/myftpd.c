@@ -58,13 +58,13 @@ int main() {
         if (fork() ==  0) {
  
             struct ftpmsg *rmsg;
-            rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
+            rmsg = malloc(sizeof (struct ftpmsg));
             while (1) {
 
-                memset(rmsg, 0, sizeof (struct ftpmsg)+DATASIZE);
+                memset(rmsg, 0, sizeof (struct ftpmsg));
 
                 int r;
-                if ((r = recv(dstSocket, rmsg, sizeof (struct ftpmsg)+DATASIZE, 0)) < 0) {
+                if ((r = recv(dstSocket, rmsg, sizeof (struct ftpmsg), 0)) < 0) {
                     perror("recv");
                     close(dstSocket);
                     exit(0);
@@ -75,9 +75,9 @@ int main() {
                     printf("finish\n");
                     exit(0);
                 }
+                rmsg->datalen = ntohs(rmsg->datalen);
 
                 print_buf(rmsg);
-
 
                 struct commands *pt;
                 for (pt = cmdtbl; pt->desc; pt++) {
@@ -89,7 +89,10 @@ int main() {
                 if (rmsg->datalen == 0)
                     (*pt->func)(dstSocket, NULL, 0);
                 else if (rmsg->datalen <= DATASIZE) {
-                    (*pt->func)(dstSocket, rmsg->data, rmsg->datalen);
+                    char buf[DATASIZE];
+                    memset(buf, 0, DATASIZE);
+                    (r = recv(dstSocket, buf, rmsg->datalen, 0));
+                    (*pt->func)(dstSocket, buf, rmsg->datalen);
 
                 }
                 if (rmsg->type == QUIT) {
