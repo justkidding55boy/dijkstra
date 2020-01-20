@@ -99,12 +99,11 @@ struct ftpmsg {
     uint8_t type;
     uint8_t  code;
     uint16_t datalen;
-    char data[DATASIZE];
+    char data[0];
 };
 
 struct ftpmsg_no_data {
     uint8_t type;
     uint8_t  code;
     uint16_t datalen;
-    char data[0];
 };

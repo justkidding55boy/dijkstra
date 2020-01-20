@@ -4,7 +4,7 @@ void print_buf(struct ftpmsg *buf);
 
 int myport()
 {
-    int port = 51231;
+    int port = 51230;
     printf("port:%d\n", port);
     return port;
 }
@@ -127,15 +127,15 @@ void pwd_proc(int dstSocket)
     send_msg(dstSocket, PWD, 0, NULL);
 
 
-    struct ftpmsg rmsg;
-    memset(&rmsg, 0, sizeof rmsg);
-
-
+    struct ftpmsg *rmsg;
+    memset(rmsg, 0, sizeof *rmsg);
+    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
+    printf("rmsg:%d\n", sizeof (*rmsg));
     
-    int t = recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    int t = recv(dstSocket, rmsg, sizeof(*rmsg) + DATASIZE, 0);
     //print_buf(&rmsg);
     printf("%dbyte\n", t);
-    printf("server pwd: %s\n", rmsg.data);
+    printf("server pwd: %s\n", rmsg->data);
 
 }
 
@@ -163,20 +163,22 @@ void dir_proc(int dstSocket, char *av[], int ac)
     else if (ac == 1){
         send_msg(dstSocket, LIST, -1, NULL);
     }
-    struct ftpmsg rmsg;
-    memset(&rmsg, 0, sizeof rmsg);
+
+    struct ftpmsg *rmsg;
+    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
+
     
-    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
     print_buf(&rmsg);
-   /* if  (rmsg.datalen != 0)
-        printf("$%s", rmsg.data); */
+    if  (rmsg->datalen != 0)
+        printf("%s", rmsg->data);
     do {
         memset(&rmsg, 0, sizeof rmsg);
         recv(dstSocket, &rmsg, sizeof rmsg, 0);
-        if (rmsg.datalen != 0)
-            printf("%s", rmsg.data);
+        if (rmsg->datalen != 0)
+            printf("%s", rmsg->data);
         //print_buf(rmsg);
-    } while (rmsg.type == DATA && rmsg.code == 0x01); 
+    } while (rmsg->type == DATA && rmsg->code == 0x01); 
  
 }
 
@@ -430,30 +432,34 @@ void print_buf(struct ftpmsg *buf)
 
 void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data)
 {
-        struct ftpmsg msg;
+        struct ftpmsg *msg;
+        if (data == NULL)
+            msg = (struct ftpmsg*)malloc(sizeof(struct ftpmsg));
+        else
+            msg = (struct ftpmsg *)malloc(sizeof(struct ftpmsg) + strlen(data));
 
-
-        memset(&msg, 0, sizeof (msg));
+        //memset(msg, 0, sizeof (*msg));
 
         if (data != NULL) {
-           memcpy(msg.data, data, strlen(data));
-           msg.datalen = (uint16_t)strlen(data);
-           printf("senddata:%s", msg.data);
+           memcpy(msg->data, data, strlen(data));
+           msg->datalen = (uint16_t)strlen(data);
+           printf("sendpath:%s\n", msg->data);
         } else {
-            msg.datalen = 0;
-            memset(msg.data, 0, sizeof msg.data);
+            msg->datalen = 0;
         }
-        msg.type = type;
-        msg.code  = code;
+        msg->type = type;
+        msg->code  = code;
         int t;
+        printf("sizeof:%d\n", sizeof(*msg));
         
-        if ((t = send(dstSocket, &msg, sizeof (msg), 0)) < 0) {
+        if ((t = send(dstSocket, msg, sizeof (*msg) + msg->datalen, 0)) < 0) {
             perror("send");
             //exit(1);
         }
         printf("%dbyte\n", t);
 
-        print_buf(&msg);
+        print_buf(msg);
+        free(msg);
 
 }
 

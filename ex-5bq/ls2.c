@@ -110,8 +110,9 @@ char *month(int num)
 	}
 }
 
-int main(int argc, char *argv[])
+int main()
 {
+    int argc = 2;
+    char *argv[] = {"ls", "..", NULL};
     ls(argc, argv);
 }
-

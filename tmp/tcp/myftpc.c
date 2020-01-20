@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
   if (argc == 2) {
       strncpy(destination, argv[1], strlen(destination));
   } else {
-      sprintf(destination, "127.0.0.1");
+      sprintf(destination, "131.113.108.53");
+      //sprintf(destination, "127.0.0.1");
   } 
 
   

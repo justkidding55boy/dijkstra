@@ -69,10 +69,9 @@ void ls_send(int dstSocket, int argc, char *argv[])
     send_msg(dstSocket, CMD, 0x01, NULL);
 
 	struct dirent *dir;
-    char tmpch[DATASIZE];
+    char tmp[DATASIZE];
     int cnt = 0;
 	while ((dir = readdir(dp)) != NULL) {
-            memset(tmpch, 0, DATASIZE);
 
 			struct stat sb;
 			if (stat(dir->d_name, &sb) < 0) {
@@ -88,17 +87,14 @@ void ls_send(int dstSocket, int argc, char *argv[])
 			struct group *gpws = getgrgid(sb.st_gid); 
 			struct tm *tmp = localtime(&sb.st_mtime);
             char ans1[DATASIZE];
-            memset(ans1, 0, DATASIZE);
 			sprintf(ans1, "%s %2d %s  %s %6d ", pms, sb.st_nlink, pws->pw_name, gpws->gr_name, (int)sb.st_size);
 		
             char ans2[DATASIZE];
-            memset(ans2, 0, DATASIZE);
 			sprintf(ans2, "%s %2d %2d:%2d ", month(tmp->tm_mon), tmp->tm_mday, tmp->tm_hour, tmp->tm_min);
             char ans3[DATASIZE];
-            memset(ans3, 0, DATASIZE);
 			sprintf(ans3, "%s ", dir->d_name);
-            sprintf(tmpch, "%s%s%s\n", ans1, ans2, ans3);
-            send_msg(dstSocket, DATA, 0x01, tmpch);
+            sprintf(tmp, "%s%s%s\n", ans1, ans2, ans3);
+            send_msg(dstSocket, DATA, 0x01, tmp);
             //memcpy(ans+cnt, tmp, strlen(tmp));
             //cnt += strlen(tmp);
 			free(pms);
