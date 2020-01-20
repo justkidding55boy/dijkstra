@@ -32,6 +32,7 @@ int ls_file_send(int dstSocket, char *filename)
         }
         send_msg(dstSocket, DATA, 0x00, NULL);
     } else {
+        send_msg(dstSocket, FILEERR, 0x00, NULL);
         return 0;
     }
     return 1;

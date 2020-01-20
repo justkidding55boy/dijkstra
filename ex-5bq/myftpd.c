@@ -6,7 +6,7 @@
 extern void print_buf(struct ftpmsg*);
 extern void send_msg(int dstSocket, uint8_t type, uint8_t code, char *data);
 extern void time_init();
-void server_execute(int dstSocket, struct ftpmsg rmsg);
+void server_execute(int dstSocket, struct ftpmsg *rmsg);
 
 int socket_init();
 
@@ -57,13 +57,14 @@ int main() {
 
         if (fork() ==  0) {
  
-
+            struct ftpmsg *rmsg;
+            rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
             while (1) {
-                struct ftpmsg rmsg;
-                memset(&rmsg, 0, sizeof rmsg);
+
+                memset(rmsg, 0, sizeof (struct ftpmsg)+DATASIZE);
 
                 int r;
-                if ((r = recv(dstSocket, &rmsg, sizeof rmsg, 0)) < 0) {
+                if ((r = recv(dstSocket, rmsg, sizeof (struct ftpmsg)+DATASIZE, 0)) < 0) {
                     perror("recv");
                     close(dstSocket);
                     exit(0);
@@ -75,13 +76,27 @@ int main() {
                     exit(0);
                 }
 
-                print_buf(&rmsg);
-                if (rmsg.type == QUIT) {
+                print_buf(rmsg);
+
+
+                struct commands *pt;
+                for (pt = cmdtbl; pt->desc; pt++) {
+                    if  (pt->typenum == rmsg->type)
+                        if  (pt->codenum == rmsg->code || pt->codenum == -1)
+                            break;
+                }
+
+                if (rmsg->datalen == 0)
+                    (*pt->func)(dstSocket, NULL, 0);
+                else if (rmsg->datalen <= DATASIZE) {
+                    (*pt->func)(dstSocket, rmsg->data, rmsg->datalen);
+
+                }
+                if (rmsg->type == QUIT) {
                     close(dstSocket);
                     printf("finish\n");
                     exit(0);
                 }
-                server_execute(dstSocket, rmsg);
             }
 
         } 

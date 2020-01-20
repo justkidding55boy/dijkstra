@@ -58,7 +58,7 @@ int main(int argc, char ** argv) {
             continue;
         }
 
-        if (strcmp(av[0], "quit") == 0) break;
+        //if (strcmp(av[0], "quit") == 0) break;
 
         execute(dstSocket, av, ac);
         printf("myftps:");

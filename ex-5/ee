@@ -1,11 +1,10 @@
 #include "my.h"
 void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data);
 void print_buf(struct ftpmsg *buf);
-int errcheck(int type, int code);
 
 int myport()
 {
-    int port = 51250;
+    int port = 51231;
     printf("port:%d\n", port);
     return port;
 }
@@ -23,28 +22,23 @@ void spwd_proc(int dstSocket) {
 
 void scd_proc(int dstSocket, char *buf, int buflen) 
 {
-    char path[DATASIZE];
+    char path[MAXCHAR];
     memset(path, 0, sizeof path);
 
     memcpy(path, buf, buflen);
     path[buflen] = '\0';
+
 
     if (path == NULL) {
         chdir(getenv("HOME"));
     } else {
         if (strcmp(path, "~") == 0) {
             chdir(getenv("HOME"));
-            send_msg(dstSocket, CMD, 0x00, NULL);
         } else {
             if (chdir(path) < 0) {
-                if (errno == EACCES) {
-                    send_msg(dstSocket, FILEERR, 0x01, NULL);
-                } else if (errno == ENOENT || errno == ENOTDIR) {
-                    send_msg(dstSocket, FILEERR, 0x00, NULL);
-                }
+                send_msg(dstSocket, FILEERR, 0x00, NULL);
             } else {
                 send_msg(dstSocket, CMD, 0x00, NULL);
-                printf("pwd changed:%s\n", path);
             }
         }
     }
@@ -58,6 +52,7 @@ void squit_proc(int dstSocket, char *filename, int datalen)
 extern void ls_send(int dstSocket, int argc, char *argv[]);
 void slist_proc(int dstSocket, char *path, int pathlen)
 {
+
     if (path == NULL) {
         int ac = 1;
         char *av[] = {"ls", NULL};
@@ -67,7 +62,7 @@ void slist_proc(int dstSocket, char *path, int pathlen)
         char **av;
         av = malloc(sizeof(char *) * 3);
         int i;
-        for (i = 0; i < 3; i++) av[i] = malloc(sizeof(char) * DATASIZE); 
+        for (i = 0; i < 3; i++) malloc(sizeof(char) * DATASIZE); 
 
         strcpy(av[0], "ls");
         strcpy(av[1], path);
@@ -79,27 +74,19 @@ void slist_proc(int dstSocket, char *path, int pathlen)
 void sget_proc(int dstSocket, char *filename, int datalen)
 {
     int r = open(filename, O_RDONLY);
-    char buf[DATASIZE];
-    memset(buf, 0, DATASIZE);
     if (r < 0) {
         if (errno == EACCES) {
             send_msg(dstSocket, FILEERR, 0x01, NULL);
-        } else if (errno == 2) {
-            send_msg(dstSocket, FILEERR, 0x00, NULL);
+            return ;
         } else {
             send_msg(dstSocket, UNKWNERR, 0x05, NULL);
         }
-        return ;
     } else {
-        if (read(r, buf, DATASIZE-1) < 0) {
-            send_msg(dstSocket, UNKWNERR, 0x05, NULL);
-            return ;
-        }
-
-        lseek(r, -1, SEEK_CUR);
         send_msg(dstSocket, CMD, 0x01, NULL);
     }
 
+    char buf[DATASIZE];
+    memset(buf, 0, DATASIZE);
     int t;
     while ((t = read(r, buf, DATASIZE-1)) >  0) {
         send_msg(dstSocket, DATA, 0x01, buf);
@@ -112,39 +99,26 @@ void sget_proc(int dstSocket, char *filename, int datalen)
 }
 
 
-void server_execute(int dstSocket, struct ftpmsg *rmsg)
+void server_execute(int dstSocket, struct ftpmsg rmsg)
 {
 
     struct commands *pt;
     for (pt = cmdtbl; pt->desc; pt++) {
-        if  (pt->typenum == rmsg->type) 
-            if  (pt->codenum == rmsg->code || pt->codenum == -1) 
+        if  (pt->typenum == rmsg.type) 
+            if  (pt->codenum == rmsg.code || pt->codenum == -1) 
                 break;
     }
-
-    if (rmsg->datalen == 0)
+    if (rmsg.datalen == 0)
         (*pt->func)(dstSocket, NULL, 0);
-    else if (rmsg->datalen <= DATASIZE) {
+    else if (rmsg.datalen <= MAXCHAR)
+        (*pt->func)(dstSocket, rmsg.data, rmsg.datalen);
 
-        (*pt->func)(dstSocket, rmsg->data, rmsg->datalen);
-        
-    }
-   
 }
 
 void quit_proc(int dstSocket)
 {
-    send_msg(dstSocket, QUIT, 0, NULL);
-
-    struct ftpmsg *rmsg;
-
-    rmsg = malloc(sizeof (struct ftpmsg));
-    memset(rmsg, 0, sizeof *rmsg); 
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
-    if (errcheck(rmsg->type, rmsg->code)) {
-        return ;
-    }
-    exit(1);
+    send_msg(dstSocket, QUIT, -1, NULL);
+    //exit(1);
 }
 
 void pwd_proc(int dstSocket)
@@ -152,47 +126,32 @@ void pwd_proc(int dstSocket)
 
     send_msg(dstSocket, PWD, 0, NULL);
 
-    struct ftpmsg *rmsg;
-    memset(rmsg, 0, sizeof *rmsg);
-    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
-    
-    recv(dstSocket, rmsg, sizeof(*rmsg) + DATASIZE, 0);
-    if (errcheck(rmsg->type, rmsg->code)) {
-        return ;
-    }
-    //print_buf(&rmsg);
 
-    printf("server pwd: %s\n", rmsg->data);
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
+
+
+    
+    int t = recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    //print_buf(&rmsg);
+    printf("%dbyte\n", t);
+    printf("server pwd: %s\n", rmsg.data);
 
 }
 
 void cd_proc(int dstSocket, char *av[], int ac)
 {
     if (ac == 2)
-        send_msg(dstSocket, CWD, 0, av[1]);
+        send_msg(dstSocket, CWD, -1, av[1]);
     else {
         fprintf(stderr, "please input the path\n");
         return ;
     }
-    struct ftpmsg *rmsg;
-    rmsg = malloc(sizeof (struct ftpmsg));
-    memset(rmsg, 0, sizeof (*rmsg));
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
     
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
-    if (errcheck(rmsg->type, rmsg->code)) {
-        return ;
-    }
-    //print_buf(rmsg);
-
-/*    if (rmsg->type == FILEERR) {
-        if (rmsg->code == 0x00)
-            fprintf(stderr, "FILEERR file doesn't exist\n");
-        if (rmsg->code == 0x01)
-            fprintf(stderr, "FILEERR file permission denied\n");
-    }
-    if (rmsg->type == UNKWNERR) {
-        fprintf(stderr, "UNKWNERR occured\n");
-    }*/
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(&rmsg);
 
 }
 
@@ -200,42 +159,24 @@ void dir_proc(int dstSocket, char *av[], int ac)
 {
 
     if (ac == 2)
-        send_msg(dstSocket, LIST, 0, av[1]);
+        send_msg(dstSocket, LIST, -1, av[1]);
     else if (ac == 1){
-        send_msg(dstSocket, LIST, 0, NULL);
+        send_msg(dstSocket, LIST, -1, NULL);
     }
-
-    struct ftpmsg *rmsg;
-
-    rmsg = malloc(sizeof (struct ftpmsg));
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
     
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
-    if (errcheck(rmsg->type, rmsg->code)) {
-        return ;
-    }
-    //print_buf(rmsg);
-    /*
-    if (rmsg->type == FILEERR) {
-        if (rmsg->code == 0x00)
-            fprintf(stderr, "FILERR file doesn't exist\n");
-        if (rmsg->code == 0x01)
-            fprintf(stderr, "FILEERR file permission denied\n");
-        return ;
-    } else if (rmsg->type == UNKWNERR) {
-        fprintf(stderr, "UNKWNERR occured\n");
-        return ;
-    }*/
-       
-    free(rmsg);
-    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
-    
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(&rmsg);
+   /* if  (rmsg.datalen != 0)
+        printf("$%s", rmsg.data); */
     do {
-        memset(rmsg, 0, (sizeof (*rmsg))+DATASIZE);
-        recv(dstSocket, rmsg, sizeof (*rmsg) + DATASIZE, 0);
-        if (rmsg->datalen != 0)
-            printf("%s", rmsg->data);
+        memset(&rmsg, 0, sizeof rmsg);
+        recv(dstSocket, &rmsg, sizeof rmsg, 0);
+        if (rmsg.datalen != 0)
+            printf("%s", rmsg.data);
         //print_buf(rmsg);
-    } while (rmsg->type == DATA && rmsg->code == 0x01); 
+    } while (rmsg.type == DATA && rmsg.code == 0x01); 
  
 }
 
@@ -254,8 +195,6 @@ void get_proc(int dstSocket, char *av[], int ac)
 {
     char serverfile[DATASIZE];
     char clientfile[DATASIZE];
-    memset(serverfile, 0, DATASIZE);
-    memset(clientfile, 0, DATASIZE);
     if (ac > 3 || ac == 1) {
         fprintf(stderr, "please input path properly\n");
         return ;
@@ -266,26 +205,11 @@ void get_proc(int dstSocket, char *av[], int ac)
     }
     strcpy(serverfile, av[1]);
     send_msg(dstSocket, RETR, 0, serverfile);
-    struct ftpmsg *rmsg;
-    rmsg = malloc(sizeof (struct ftpmsg));
-    memset(rmsg, 0, sizeof (*rmsg));
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
     
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
-    if (errcheck(rmsg->type, rmsg->code)) {
-        return ;
-    }
-    /*
-    print_buf(rmsg);
-    if (rmsg->type == FILEERR && rmsg->code == 0x01) {
-        fprintf(stderr, "FILEERR file permission denied\n");
-        return ;
-    } else if (rmsg->type == FILEERR && rmsg->code == 0x00) {
-        fprintf(stderr, "FIILEERR file doesn't exist\n");
-        return ;
-    } else if (rmsg->type == UNKWNERR) {
-        fprintf(stderr, "UNKWNERR occured\n");
-        return ;
-    }*/
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(&rmsg);
 
     int w = open(clientfile, O_WRONLY|O_CREAT|O_APPEND,  0644);
 
@@ -293,94 +217,72 @@ void get_proc(int dstSocket, char *av[], int ac)
         perror("open");
         return ;
     }
-    free(rmsg);
-    rmsg = malloc(sizeof(struct ftpmsg) + DATASIZE);
+    if (write(w, rmsg.data, rmsg.datalen) < 0) {
+        perror("write");
+        return ;
+    }
+
 
     do {
-        memset(rmsg, 0, sizeof (*rmsg) + DATASIZE);
-        recv(dstSocket, rmsg, sizeof (struct ftpmsg) + DATASIZE, 0);
-        //printf("received:%dbytes\n",t);
+        memset(&rmsg, 0, sizeof rmsg);
+        recv(dstSocket, &rmsg, sizeof rmsg, 0);
         //printf("%s", rmsg.data);
-        int cmp = rmsg->datalen > DATASIZE ? DATASIZE:rmsg->datalen;
-        if (write(w, rmsg->data, cmp) < 0) {
+        if (write(w, rmsg.data, rmsg.datalen) < 0) {
             perror("write");
             return ;
         }
         //print_buf(rmsg);
-
-    } while (rmsg->type == DATA && rmsg->code == 0x01); 
-    //printf("get finished\n");
+    } while (rmsg.type == DATA && rmsg.code == 0x01); 
     close(w);
  
-}
-
-int errcheck(int type, int code)
-{
-    struct commands *pt;
-    for (pt = cmdtbl; pt->desc; pt++) {
-        if (pt->typenum == CMDERR)
-            break;
-    }
-
-    for (; pt->typenum != DATA; pt++) {
-        if (pt->typenum == type &&  pt->codenum == code) {
-            fprintf(stderr, "%s\n", pt->desc);
-            return 1;
-        }
-    }
-    return 0;
 }
 
 void put_proc(int dstSocket, char *av[], int ac)
 {
     char serverfile[DATASIZE];
     char clientfile[DATASIZE];
-    memset(serverfile, 0, DATASIZE);
-    memset(clientfile, 0, DATASIZE);
     if (ac > 3 || ac == 1) {
         fprintf(stderr, "please input path properly\n");
         return ;
     } else if (ac == 3) {
-        strncpy(serverfile, av[2], DATASIZE);
+        strcpy(serverfile, av[2]);
     } else {
         extract_filename(av[1], serverfile);
     }
-    strncpy(clientfile, av[1], DATASIZE);
+    strcpy(clientfile, av[1]);
 
     int r = open(clientfile, O_RDONLY);
     if (r < 0) {
-        perror("open");
+        if (errno == EACCES) {
+            fprintf(stderr, "permission denied\n");
+        } else {
+            fprintf(stderr, "ukknown error\n");
+        }
         return ;
     } 
 
+
     send_msg(dstSocket, STOR, 0, serverfile);
-    struct ftpmsg *rmsg;
-    rmsg = malloc(sizeof (struct ftpmsg));
-    memset(rmsg, 0, sizeof (*rmsg));
+    struct ftpmsg rmsg;
+    memset(&rmsg, 0, sizeof rmsg);
     
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
-    if (errcheck(rmsg->type, rmsg->code)) {
-        return ;
-    }
-    printf("receive:");
-    print_buf(rmsg);
+    recv(dstSocket, &rmsg, sizeof(rmsg), 0);
+    print_buf(&rmsg);
     //if OKでない時の分岐も考える
-    /*
-    if (rmsg->type == CMD && rmsg->code == 0x02) {
+    if (rmsg.type == CMD && rmsg.code == 0x02) {
        //OK 
-    } else if (rmsg->type == FILEERR && rmsg->code == 0x01){
+    } else if (rmsg.type == FILEERR && rmsg.code == 0x01){
         fprintf(stderr, "file permission denied\n");
         return ;
     } else {
         fprintf(stderr, "unknown code\n");
         return ;
-    }*/
+    }
     
     char buf[DATASIZE];
     memset(buf, 0, DATASIZE);
     int t;
     while ((t = read(r, buf, DATASIZE-1)) >  0) {
-        //printf("buf:%s\n", buf);
         send_msg(dstSocket, DATA, 0x01, buf);
         memset(buf, 0, DATASIZE);
     }
@@ -393,12 +295,10 @@ void put_proc(int dstSocket, char *av[], int ac)
 
 void sput_proc(int dstSocket, char *filename, int datalen)
 {
-    struct ftpmsg *rmsg;
-    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
+    struct ftpmsg rmsg;
 
     //最初にきたものはfilenameが入っている
     char serverfile[DATASIZE];
-    memset(serverfile, 0, DATASIZE);
     if (filename != NULL)
         memcpy(serverfile, filename, datalen);
     else
@@ -419,15 +319,15 @@ void sput_proc(int dstSocket, char *filename, int datalen)
 
 
     do {
-        memset(rmsg, 0, sizeof (*rmsg));
-        recv(dstSocket, rmsg, sizeof (*rmsg)+DATASIZE, 0);
-        //printf("%s", rmsg->data);
-        if (write(w, rmsg->data, rmsg->datalen) < 0) {
+        memset(&rmsg, 0, sizeof rmsg);
+        recv(dstSocket, &rmsg, sizeof rmsg, 0);
+        printf("%s", rmsg.data);
+        if (write(w, rmsg.data, rmsg.datalen) < 0) {
             perror("write");
             return ;
         }
         //print_buf(rmsg);
-    } while (rmsg->type == DATA && rmsg->code == 0x01); 
+    } while (rmsg.type == DATA && rmsg.code == 0x01); 
     close(w);
 
 }
@@ -520,53 +420,40 @@ void print_buf(struct ftpmsg *buf)
     
     printf("type 0x%x, " ,buf->type);
     printf("code 0x%x, (%s), datalen %d\n", buf->code, pt->desc, buf->datalen);
-    /*
-    if (buf->datalen != 0)
+    /*if (buf->datalen != 0)
         printf("data:%s\n", buf->data);*/
 
-    /*if (buf->code == FILEERR || buf->code  == UNKWNERR)
-        printf("%s\n",  pt->desc);*/
+    if (buf->code == FILEERR || buf->code  == UNKWNERR)
+        printf("%s\n",  pt->desc);
 
 }
 
 void send_msg(int dstSocket, uint8_t type, uint8_t code, char  *data)
 {
+        struct ftpmsg msg;
 
-    struct ftpmsg *msg;
-    if (data == NULL) {
-        msg = (struct ftpmsg*)malloc(sizeof(struct ftpmsg));
-        memset(msg, 0, sizeof(struct ftpmsg));
-        msg->datalen = 0;
-        msg->type = type;
-        msg->code  = code;
+
+        memset(&msg, 0, sizeof (msg));
+
+        if (data != NULL) {
+           memcpy(msg.data, data, strlen(data));
+           msg.datalen = (uint16_t)strlen(data);
+           printf("senddata:%s", msg.data);
+        } else {
+            msg.datalen = 0;
+            memset(msg.data, 0, sizeof msg.data);
+        }
+        msg.type = type;
+        msg.code  = code;
         int t;
-        //printf("sent:");
-        //printf("sizeof:%d\n", sizeof (*msg));
         
-        if ((t = send(dstSocket, msg, sizeof (*msg), 0)) < 0) {
+        if ((t = send(dstSocket, &msg, sizeof (msg), 0)) < 0) {
             perror("send");
             //exit(1);
         }
-    } else {
-         msg = (struct ftpmsg *)malloc(sizeof(struct ftpmsg) + DATASIZE);
-         memset(msg, 0, sizeof (struct ftpmsg) + DATASIZE);
-         memcpy(msg->data, data, strlen(data));
-         msg->datalen = (uint16_t)strlen(data);
-        msg->type = type;
-        msg->code  = code;
-        int t;
-        //printf("sent:");
-        //printf("sizeof:%d\n", sizeof (*msg) + msg->datalen);
-        
-        if ((t = send(dstSocket, msg, sizeof (*msg) + DATASIZE, 0)) < 0) {
-            perror("send");
-            //exit(1);
-        }
-        //printf("%dbyte\n", t);
-    }
+        printf("%dbyte\n", t);
 
-    //print_buf(msg);
-    free(msg);
+        print_buf(&msg);
 
 }
 
