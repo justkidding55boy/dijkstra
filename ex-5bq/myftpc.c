@@ -46,8 +46,12 @@ int main(int argc, char ** argv) {
         char **av;
         av = malloc(sizeof (char *) * 10);
 
-        for (i = 0; i < 10; i++)  av[i] = malloc(sizeof (char) * MAXCHAR);
-        
+        for (i = 0; i < 10; i++)  {
+            av[i] = malloc(sizeof (char) * MAXCHAR);
+            memset(av[i], 0, MAXCHAR); 
+        }
+            
+               
         int ac = 0;
 
         getargs(&ac, av, buf);
