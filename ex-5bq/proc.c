@@ -5,7 +5,7 @@ int errcheck(int type, int code);
 
 int myport()
 {
-    int port = 50332;
+    int port = 50021;
     printf("port:%d\n", port);
     return port;
 }
@@ -163,7 +163,8 @@ void pwd_proc(int dstSocket)
         return ;
     }
     rmsg->datalen = ntohs(rmsg->datalen);
-    recv(dstSocket, rmsg->data, rmsg->datalen, 0);
+    if (rmsg->datalen != 0)
+        recv(dstSocket, rmsg->data, rmsg->datalen, 0);
     //print_buf(&rmsg);
 
     printf("server pwd: %s\n", rmsg->data);
@@ -233,16 +234,17 @@ void dir_proc(int dstSocket, char *av[], int ac)
         return ;
     }*/
        
-    free(rmsg);
-    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
+
     
     do {
-        memset(rmsg, 0, (sizeof (*rmsg))+DATASIZE);
+        memset(rmsg, 0, sizeof (*rmsg));
         recv(dstSocket, rmsg, sizeof (*rmsg), 0);
         rmsg->datalen = ntohs(rmsg->datalen);
+        char buf[DATASIZE];
+        memset(buf, 0, DATASIZE);
         if (rmsg->datalen != 0) {
-            recv(dstSocket, rmsg->data, rmsg->datalen, 0);
-            printf("%s", rmsg->data);
+            recv(dstSocket, buf, rmsg->datalen, 0);
+            printf("%s", buf);
         }
         print_buf(rmsg);
     } while (rmsg->type == DATA && rmsg->code == 0x01); 
@@ -286,9 +288,9 @@ void get_proc(int dstSocket, char *av[], int ac)
     send_msg(dstSocket, RETR, 0, serverfile);
     struct ftpmsg *rmsg;
     rmsg = malloc(sizeof (struct ftpmsg));
-    memset(rmsg, 0, sizeof (*rmsg));
+    memset(rmsg, 0, sizeof (struct ftpmsg));
     
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
+    recv(dstSocket, rmsg, sizeof(struct ftpmsg), 0);
     if (errcheck(rmsg->type, rmsg->code)) {
         remove(clientfile);
         free(rmsg);
@@ -307,21 +309,22 @@ void get_proc(int dstSocket, char *av[], int ac)
         return ;
     }*/
 
-
-    free(rmsg);
-    rmsg = malloc(sizeof(struct ftpmsg) + DATASIZE);
-
     do {
-        memset(rmsg, 0, sizeof (*rmsg) + DATASIZE);
+        memset(rmsg, 0, sizeof (struct ftpmsg));
         recv(dstSocket, rmsg, sizeof (struct ftpmsg), 0);
         rmsg->datalen = htons(rmsg->datalen);
+        char buf[DATASIZE];
+        memset(buf, 0, DATASIZE);
         if (rmsg->datalen != 0) {
-            recv(dstSocket, rmsg->data, rmsg->datalen, 0);
+            recv(dstSocket, buf, rmsg->datalen, 0);
         }
         //printf("received:%dbytes\n",t);
         //printf("%s", rmsg.data);
         int cmp = rmsg->datalen > DATASIZE ? DATASIZE:rmsg->datalen;
-        if (write(w, rmsg->data, cmp) < 0) {
+        if (rmsg->datalen > DATASIZE) {
+            fprintf(stderr, "sent data length is too big\n");
+        }
+        if (write(w, buf, cmp) < 0) {
             perror("write");
             return ;
         }
@@ -375,13 +378,13 @@ void put_proc(int dstSocket, char *av[], int ac)
     send_msg(dstSocket, STOR, 0, serverfile);
     struct ftpmsg *rmsg;
     rmsg = malloc(sizeof (struct ftpmsg));
-    memset(rmsg, 0, sizeof (*rmsg));
+    memset(rmsg, 0, sizeof (struct ftpmsg));
     
-    recv(dstSocket, rmsg, sizeof(*rmsg), 0);
+    recv(dstSocket, rmsg, sizeof(struct ftpmsg), 0);
     if (errcheck(rmsg->type, rmsg->code)) {
         return ;
     }
-    printf("receive:");
+
     print_buf(rmsg);
     //if OKでない時の分岐も考える
     /*
@@ -436,17 +439,19 @@ void sput_proc(int dstSocket, char *filename, int datalen)
         send_msg(dstSocket, CMD,  0x02, NULL);
 
     struct ftpmsg *rmsg;
-    rmsg = malloc(sizeof (struct ftpmsg) + DATASIZE);
+    rmsg = malloc(sizeof (struct ftpmsg));
 
     do {
-        memset(rmsg, 0, sizeof (struct ftpmsg) + DATASIZE);
-        recv(dstSocket, rmsg, sizeof (*rmsg), 0);
+        memset(rmsg, 0, sizeof (struct ftpmsg));
+        recv(dstSocket, rmsg, sizeof (struct ftpmsg), 0);
         rmsg->datalen = ntohs(rmsg->datalen);
+        char buf[DATASIZE];
+        memset(buf, 0, DATASIZE);
         if (rmsg->datalen != 0) {
-            recv(dstSocket, rmsg->data, rmsg->datalen, 0);
+            recv(dstSocket, buf, rmsg->datalen, 0);
         }
                   //printf("%s", rmsg->data);
-        if (write(w, rmsg->data, rmsg->datalen) < 0) {
+        if (write(w, buf, rmsg->datalen) < 0) {
             perror("write");
             return ;
         }
@@ -536,9 +541,10 @@ void print_buf(struct ftpmsg *buf)
             if  (pt->codenum == buf->code || pt->codenum == -1) 
                 break;
     }
-    
+    /*
+    static int i = 0; printf("%d", i++);
     printf("type 0x%x, " ,buf->type);
-    printf("code 0x%x, (%s), datalen %d\n", buf->code, pt->desc, buf->datalen);
+    printf("code 0x%x, (%s), datalen %d\n", buf->code, pt->desc, buf->datalen);*/
     /*
     if (buf->datalen != 0)
         printf("data:%s\n", buf->data);*/
