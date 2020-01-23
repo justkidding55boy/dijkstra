@@ -62,7 +62,7 @@ static struct commands cmdtbl[] = {
     {"UNKWNERR unknown error", UNKWNERR, 0x05},
     {"DATA data end", DATA, 0x00},
     {"DATA data lasts", DATA, 0x01},
-    {NULL,  0, -1}
+    {NULL,  0, -1, 0}
 };
 
 

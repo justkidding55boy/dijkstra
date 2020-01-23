@@ -5,4 +5,4 @@ get ではディレクトリを読まれた時のエラー処理も行ってい�
 
 課題3ではMacとLinuxでの挙動の差で大幅減点となってしまいました。留学のためGPAを高く取る必要があり、今回の課題5はかなりの時間をかけて取り組みました。もし他の学生に比べ頑強なプログラムであると認められる際にはぜひ加点のチャンスをお願いします
 
-logex00.educ.cc.keio.ac.jp
+

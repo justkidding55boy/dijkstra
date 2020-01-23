@@ -5,7 +5,7 @@ int errcheck(int type, int code);
 
 int myport()
 {
-    int port = 50021;
+    int port = 50019;
     printf("port:%d\n", port);
     return port;
 }
@@ -146,6 +146,7 @@ void quit_proc(int dstSocket)
     if (errcheck(rmsg->type, rmsg->code)) {
         return ;
     }
+    free(rmsg);
     exit(1);
 }
 
@@ -168,6 +169,7 @@ void pwd_proc(int dstSocket)
     //print_buf(&rmsg);
 
     printf("server pwd: %s\n", rmsg->data);
+    free(rmsg);
 
 }
 
@@ -198,7 +200,7 @@ void cd_proc(int dstSocket, char *av[], int ac)
     if (rmsg->type == UNKWNERR) {
         fprintf(stderr, "UNKWNERR occured\n");
     }*/
-
+    free(rmsg);
 }
 
 void dir_proc(int dstSocket, char *av[], int ac)
@@ -234,8 +236,6 @@ void dir_proc(int dstSocket, char *av[], int ac)
         return ;
     }*/
        
-
-    
     do {
         memset(rmsg, 0, sizeof (*rmsg));
         recv(dstSocket, rmsg, sizeof (*rmsg), 0);
@@ -247,7 +247,8 @@ void dir_proc(int dstSocket, char *av[], int ac)
             printf("%s", buf);
         }
         print_buf(rmsg);
-    } while (rmsg->type == DATA && rmsg->code == 0x01); 
+    } while (rmsg->type == DATA && rmsg->code == 0x01);
+    free(rmsg); 
  
 }
 
@@ -332,6 +333,7 @@ void get_proc(int dstSocket, char *av[], int ac)
 
     } while (rmsg->type == DATA && rmsg->code == 0x01); 
     //printf("get finished\n");
+    free(rmsg);
     close(w);
  
 }
@@ -382,6 +384,7 @@ void put_proc(int dstSocket, char *av[], int ac)
     
     recv(dstSocket, rmsg, sizeof(struct ftpmsg), 0);
     if (errcheck(rmsg->type, rmsg->code)) {
+        free(rmsg);
         return ;
     }
 
@@ -410,6 +413,7 @@ void put_proc(int dstSocket, char *av[], int ac)
         perror("read");
 
     send_msg(dstSocket, DATA, 0x00, NULL);
+    free(rmsg);
     close(r);
 }
 
@@ -445,6 +449,10 @@ void sput_proc(int dstSocket, char *filename, int datalen)
         memset(rmsg, 0, sizeof (struct ftpmsg));
         recv(dstSocket, rmsg, sizeof (struct ftpmsg), 0);
         rmsg->datalen = ntohs(rmsg->datalen);
+        if (rmsg->type != DATA) {
+            fprintf(stderr, "illegal command\n");
+            return ;
+        }
         char buf[DATASIZE];
         memset(buf, 0, DATASIZE);
         if (rmsg->datalen != 0) {
@@ -456,7 +464,8 @@ void sput_proc(int dstSocket, char *filename, int datalen)
             return ;
         }
         print_buf(rmsg);
-    } while (rmsg->type == DATA && rmsg->code == 0x01); 
+    } while (rmsg->type == DATA && rmsg->code == 0x01);
+    free(rmsg);
     close(w);
 
 }
@@ -541,10 +550,10 @@ void print_buf(struct ftpmsg *buf)
             if  (pt->codenum == buf->code || pt->codenum == -1) 
                 break;
     }
-    /*
+    
     static int i = 0; printf("%d", i++);
     printf("type 0x%x, " ,buf->type);
-    printf("code 0x%x, (%s), datalen %d\n", buf->code, pt->desc, buf->datalen);*/
+    printf("code 0x%x, (%s), datalen %d\n", buf->code, pt->desc, buf->datalen);
     /*
     if (buf->datalen != 0)
         printf("data:%s\n", buf->data);*/

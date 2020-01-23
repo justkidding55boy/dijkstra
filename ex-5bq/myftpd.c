@@ -75,6 +75,7 @@ int main() {
                     printf("finish\n");
                     exit(0);
                 }
+
                 rmsg->datalen = ntohs(rmsg->datalen);
 
                 print_buf(rmsg);
@@ -84,6 +85,11 @@ int main() {
                     if  (pt->typenum == rmsg->type)
                         if  (pt->codenum == rmsg->code || pt->codenum == -1)
                             break;
+                }
+
+                if (pt == NULL) {
+                    send_msg(dstSocket, CMDERR, 0x01, NULL);
+                    continue;
                 }
 
                 if (rmsg->datalen == 0)
